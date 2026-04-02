@@ -1,0 +1,52 @@
+package com.akatsuki.kerenhr.service;
+
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
+
+import java.util.Objects;
+
+@Slf4j
+@Service
+public class KerenHrChatService {
+
+    private static final int LOG_PREVIEW_MAX = 2000;
+
+    private final ChatClient chatClient;
+
+    public KerenHrChatService(ChatClient chatClient) {
+        this.chatClient = chatClient;
+    }
+
+    @SuppressWarnings("null")
+    public String chat(String message) {
+        if (!StringUtils.hasText(message)) {
+            throw new IllegalArgumentException("message is required");
+        }
+
+        String safeMessage = Objects.requireNonNull(message, "message is required").trim();
+        log.info("Sending chat message to OpenCode, length={}", safeMessage.length());
+        log.debug("User -> OpenCode: {}", previewForLog(safeMessage));
+        String response = chatClient.prompt()
+            .user(safeMessage)
+            .call()
+            .content();
+        log.info("Received chat response from OpenCode, length={}", response == null ? 0 : response.length());
+        log.debug("OpenCode -> User: {}", previewForLog(response));
+        return response;
+    }
+
+    private String previewForLog(String text) {
+        if (text == null) {
+            return "(null)";
+        }
+
+        String normalized = text.replace("\r", "\\r").replace("\n", "\\n");
+        if (normalized.length() <= LOG_PREVIEW_MAX) {
+            return normalized;
+        }
+
+        return normalized.substring(0, LOG_PREVIEW_MAX) + "...(truncated)";
+    }
+}

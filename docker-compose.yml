@@ -1,0 +1,22 @@
+services:
+  kerenhr:
+    build: .
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env
+    volumes:
+      # Persist user workspaces across container restarts
+      - kerenhr-workspaces:/data/workspaces
+      # Global OpenCode config (opencode.json, skills/) — editable on host
+      - ./mounts/global-config:/home/kerenhr/.config/opencode
+      # Per-user workspace OpenCode configs — editable on host
+      - ./mounts/user1-config/opencode.json:/data/workspaces/user1/opencode.json
+      - ./mounts/user2-config/opencode.json:/data/workspaces/user2/opencode.json
+      - ./mounts/atalya-config/opencode.json:/data/workspaces/atalya/opencode.json
+      # Persist OpenCode internal data (sessions db, logs, auth)
+      - kerenhr-opencode-data:/home/kerenhr/.local/share/opencode
+
+volumes:
+  kerenhr-workspaces:
+  kerenhr-opencode-data:

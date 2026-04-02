@@ -1,0 +1,2501 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KerenHR</title>
+  <style>
+    :root {
+      --bg: #eef3f7;
+      --panel: #ffffff;
+      --text: #17212b;
+      --muted: #506070;
+      --border: #d0d9e2;
+      --accent: #0f766e;
+      --accent-strong: #115e59;
+      --danger-bg: #fff1f2;
+      --danger-border: #fecdd3;
+      --danger-text: #9f1239;
+      --user: #daf4ed;
+      --bot: #e9eefb;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      color: var(--text);
+      background: radial-gradient(circle at 10% 10%, #dffaf4 0%, var(--bg) 40%, #dce5ef 100%);
+      display: grid;
+      place-items: center;
+      padding: 20px;
+    }
+
+    .shell {
+      width: min(960px, 100%);
+      height: min(760px, calc(100vh - 40px));
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      background: var(--panel);
+      box-shadow: 0 16px 42px rgba(15, 23, 42, 0.13);
+      overflow: hidden;
+      position: relative;
+    }
+
+    .view {
+      height: 100%;
+      overflow: hidden;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    .view.hidden {
+      display: none !important;
+    }
+
+    .login-view {
+      display: grid;
+      place-items: center;
+      padding: 30px;
+      background: linear-gradient(140deg, #f0f9ff 0%, #ffffff 35%, #ecfeff 100%);
+    }
+
+    .login-card {
+      width: min(440px, 100%);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      background: #ffffff;
+      box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+      padding: 24px;
+      display: grid;
+      gap: 14px;
+    }
+
+    .login-title {
+      font-size: 1.55rem;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+      margin: 0;
+    }
+
+    .login-subtitle {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.4;
+    }
+
+    .field-label {
+      margin: 0;
+      font-size: 0.92rem;
+      font-weight: 600;
+    }
+
+    .input {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 14px;
+      font-size: 1rem;
+      outline: none;
+      transition: border-color 0.12s ease, box-shadow 0.12s ease;
+    }
+
+    .input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.14);
+    }
+
+    .action-btn {
+      border: none;
+      border-radius: 10px;
+      height: 44px;
+      background: var(--accent);
+      color: #ffffff;
+      font-size: 0.98rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.15s ease;
+    }
+
+    .action-btn:hover {
+      background: var(--accent-strong);
+    }
+
+    .action-btn:disabled {
+      opacity: 0.56;
+      cursor: not-allowed;
+    }
+
+    .error {
+      margin: 0;
+      border: 1px solid var(--danger-border);
+      background: var(--danger-bg);
+      color: var(--danger-text);
+      border-radius: 10px;
+      padding: 10px 12px;
+      line-height: 1.35;
+      font-size: 0.92rem;
+    }
+
+    .chat-view {
+      display: grid;
+      grid-template-rows: auto 1fr auto auto auto auto auto;
+      overflow: hidden;
+    }
+
+    .chat-header {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      background: #ffffff;
+    }
+
+    .title-wrap {
+      display: grid;
+      gap: 4px;
+    }
+
+    .chat-title {
+      margin: 0;
+      font-size: 1.25rem;
+      font-weight: 700;
+    }
+
+    .session-meta {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .logout-btn {
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      height: 36px;
+      padding: 0 12px;
+      background: #ffffff;
+      color: var(--text);
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    .logout-btn:hover {
+      background: #f8fafc;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .ghost-btn {
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      height: 36px;
+      padding: 0 12px;
+      background: #f8fafc;
+      color: var(--text);
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    .ghost-btn:hover {
+      background: #eef2f7;
+    }
+
+    .chat {
+      padding: 18px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      scroll-behavior: smooth;
+      background: linear-gradient(180deg, #fcfeff 0%, #f7fafc 100%);
+    }
+
+    .message {
+      max-width: 80%;
+      padding: 10px 12px;
+      border-radius: 12px;
+      line-height: 1.4;
+      white-space: pre-wrap;
+      word-break: break-word;
+      border: 1px solid var(--border);
+    }
+
+    .message.user {
+      align-self: flex-end;
+      background: var(--user);
+    }
+
+    .message.bot {
+      align-self: flex-start;
+      background: var(--bot);
+    }
+
+    .message.error {
+      align-self: center;
+      background: var(--danger-bg);
+      border-color: var(--danger-border);
+      color: var(--danger-text);
+    }
+
+    .pending-pane {
+      border-top: 1px solid var(--border);
+      background: #fffbeb;
+      padding: 12px 14px;
+      display: grid;
+      gap: 10px;
+    }
+
+    .session-pane {
+      border-top: 1px solid var(--border);
+      background: #f0f9ff;
+      padding: 12px 14px;
+      display: grid;
+      gap: 10px;
+    }
+
+    .session-title {
+      margin: 0;
+      font-size: 0.92rem;
+      font-weight: 700;
+      color: #075985;
+    }
+
+    .session-create {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px;
+    }
+
+    .session-list {
+      display: grid;
+      gap: 8px;
+      max-height: 220px;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+
+    .session-item {
+      border: 1px solid #bae6fd;
+      background: #ffffff;
+      border-radius: 10px;
+      padding: 8px 10px;
+      display: grid;
+      gap: 6px;
+    }
+
+    .session-item-header {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .session-item-title {
+      margin: 0;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: #0c4a6e;
+    }
+
+    .session-item-meta {
+      margin: 0;
+      font-size: 0.82rem;
+      color: #334155;
+    }
+
+    .session-pill {
+      border-radius: 999px;
+      border: 1px solid #22c55e;
+      background: #dcfce7;
+      color: #166534;
+      font-size: 0.74rem;
+      font-weight: 700;
+      padding: 2px 8px;
+      white-space: nowrap;
+    }
+
+    .session-select-btn {
+      border: 1px solid #7dd3fc;
+      border-radius: 8px;
+      background: #e0f2fe;
+      color: #0c4a6e;
+      font-size: 0.8rem;
+      font-weight: 600;
+      height: 30px;
+      padding: 0 10px;
+      cursor: pointer;
+      justify-self: start;
+    }
+
+    .session-item-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .session-action-btn {
+      border-radius: 8px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      height: 30px;
+      padding: 0 10px;
+      cursor: pointer;
+    }
+
+    .session-action-btn.rename {
+      border: 1px solid #cbd5e1;
+      background: #f8fafc;
+      color: #0f172a;
+    }
+
+    .session-action-btn.delete {
+      border: 1px solid #fecdd3;
+      background: #fff1f2;
+      color: #9f1239;
+    }
+
+    .skill-pane {
+      border-top: 1px solid var(--border);
+      background: #eef6ff;
+      padding: 12px 14px;
+      display: grid;
+      gap: 8px;
+    }
+
+    .skill-title {
+      margin: 0;
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: #1d4ed8;
+    }
+
+    .skill-hint {
+      margin: 0;
+      font-size: 0.85rem;
+      color: #1e3a8a;
+    }
+
+    .skill-input {
+      width: 100%;
+      min-height: 120px;
+      max-height: 260px;
+      resize: vertical;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-family: inherit;
+      font-size: 0.95rem;
+      line-height: 1.4;
+      outline: none;
+    }
+
+    .skill-input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.14);
+    }
+
+    .skill-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .skill-actions .action-btn {
+      height: 36px;
+      padding: 0 12px;
+    }
+
+    .skill-list {
+      display: grid;
+      gap: 8px;
+      max-height: 200px;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+
+    .skill-item-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .skill-item-name {
+      margin: 0;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: #1e3a8a;
+    }
+
+    .skill-item-desc {
+      margin: 0;
+      font-size: 0.82rem;
+      color: #334155;
+      line-height: 1.35;
+    }
+
+    .skill-modal-delete-btn {
+      border: none;
+      background: #fee2e2;
+      color: #b91c1c;
+      font-size: 0.78rem;
+      font-weight: 600;
+      padding: 4px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .skill-modal-delete-btn:hover {
+      background: #fecaca;
+      color: #991b1b;
+    }
+
+    .skill-modal-delete-btn:disabled {
+      opacity: 0.56;
+      cursor: not-allowed;
+      cursor: not-allowed;
+    }
+
+    .skill-divider {
+      border: none;
+      border-top: 1px solid #bfdbfe;
+      margin: 4px 0;
+    }
+
+    .skill-item {
+      border: 1px solid #93c5fd;
+      background: #ffffff;
+      border-radius: 10px;
+      padding: 8px 10px;
+      display: grid;
+      gap: 4px;
+      cursor: pointer;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+
+    .skill-item:hover {
+      border-color: #60a5fa;
+      box-shadow: 0 1px 4px rgba(37, 99, 235, 0.12);
+    }
+
+    .skill-modal-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 1000;
+      background: rgba(0, 0, 0, 0.45);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .skill-modal-overlay.hidden {
+      display: none;
+    }
+
+    .skill-modal {
+      background: #ffffff;
+      border-radius: 14px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.22);
+      width: 100%;
+      max-width: 560px;
+      max-height: 70vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .skill-modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 16px 18px 0;
+    }
+
+    .skill-modal-title {
+      margin: 0;
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #1e3a8a;
+    }
+
+    .skill-modal-close {
+      border: none;
+      background: none;
+      font-size: 1.4rem;
+      color: #64748b;
+      cursor: pointer;
+      padding: 0 4px;
+      line-height: 1;
+      flex-shrink: 0;
+    }
+
+    .skill-modal-close:hover {
+      color: #1e293b;
+    }
+
+    .skill-modal-desc {
+      margin: 4px 18px 0;
+      font-size: 0.85rem;
+      color: #475569;
+      line-height: 1.35;
+    }
+
+    .skill-modal-body {
+      margin: 12px 18px 18px;
+      padding: 12px 14px;
+      background: #f1f5f9;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', Consolas, monospace;
+      font-size: 0.82rem;
+      line-height: 1.5;
+      color: #1e293b;
+      white-space: pre-wrap;
+      word-break: break-word;
+      overflow-y: auto;
+      flex: 1;
+      min-height: 0;
+    }
+
+    /* Edit mode styles */
+    .skill-modal-edit-btn {
+      border: none;
+      background: #2563eb;
+      color: #fff;
+      font-size: 0.78rem;
+      font-weight: 600;
+      padding: 4px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .skill-modal-edit-btn:hover {
+      background: #1d4ed8;
+    }
+
+    .skill-modal-desc-input {
+      display: block;
+      width: 100%;
+      box-sizing: border-box;
+      margin: 4px 18px 0;
+      padding: 6px 10px;
+      font-size: 0.85rem;
+      color: #1e293b;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      font-family: inherit;
+      line-height: 1.35;
+      /* width calc accounts for left+right margin */
+      width: calc(100% - 36px);
+    }
+
+    .skill-modal-desc-input:focus {
+      outline: none;
+      border-color: #2563eb;
+      box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+    }
+
+    .skill-modal-content-textarea {
+      display: block;
+      margin: 12px 18px 0;
+      padding: 12px 14px;
+      background: #f1f5f9;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', Consolas, monospace;
+      font-size: 0.82rem;
+      line-height: 1.5;
+      color: #1e293b;
+      resize: vertical;
+      overflow-y: auto;
+      flex: 1;
+      min-height: 120px;
+      width: calc(100% - 36px);
+      box-sizing: border-box;
+    }
+
+    .skill-modal-content-textarea:focus {
+      outline: none;
+      border-color: #2563eb;
+      box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+    }
+
+    .skill-modal-edit-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      margin: 12px 18px 18px;
+    }
+
+    .skill-modal-save-btn {
+      border: none;
+      background: #16a34a;
+      color: #fff;
+      font-size: 0.82rem;
+      font-weight: 600;
+      padding: 6px 18px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    .skill-modal-save-btn:hover {
+      background: #15803d;
+    }
+
+    .skill-modal-save-btn:disabled {
+      background: #94a3b8;
+      cursor: not-allowed;
+    }
+
+    .skill-modal-cancel-btn {
+      border: 1px solid #cbd5e1;
+      background: #fff;
+      color: #475569;
+      font-size: 0.82rem;
+      font-weight: 600;
+      padding: 6px 18px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    .skill-modal-cancel-btn:hover {
+      background: #f1f5f9;
+    }
+
+    /* MCP Pane */
+    .mcp-pane {
+      border-top: 1px solid var(--border);
+      background: #f0f4ff;
+      padding: 12px 14px;
+      display: grid;
+      gap: 10px;
+    }
+
+    .mcp-title {
+      margin: 0;
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: #1e3a8a;
+    }
+
+    .mcp-warning {
+      margin: 0;
+      font-size: 0.8rem;
+      color: #92400e;
+      background: #fffbeb;
+      border: 1px solid #fcd34d;
+      border-radius: 8px;
+      padding: 8px 10px;
+      line-height: 1.35;
+    }
+
+    .mcp-list {
+      display: grid;
+      gap: 8px;
+      max-height: 260px;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+
+    .mcp-item {
+      border: 1px solid #93c5fd;
+      background: #ffffff;
+      border-radius: 10px;
+      padding: 10px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .mcp-item-info {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+      flex: 1;
+    }
+
+    .mcp-status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .mcp-status-dot.connected { background: #22c55e; }
+    .mcp-status-dot.disabled { background: #94a3b8; }
+    .mcp-status-dot.failed { background: #ef4444; }
+    .mcp-status-dot.needs_auth { background: #f59e0b; }
+    .mcp-status-dot.needs_client_registration { background: #f59e0b; }
+    .mcp-status-dot.unknown { background: #94a3b8; }
+
+    .mcp-item-name {
+      margin: 0;
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: #1e3a8a;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .mcp-item-status {
+      margin: 0;
+      font-size: 0.75rem;
+      color: #64748b;
+    }
+
+    .mcp-item-error {
+      margin: 0;
+      font-size: 0.72rem;
+      color: #dc2626;
+      line-height: 1.2;
+    }
+
+    .mcp-item-labels {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      flex: 1;
+    }
+
+    /* Toggle switch */
+    .mcp-toggle {
+      position: relative;
+      width: 40px;
+      height: 22px;
+      flex-shrink: 0;
+    }
+
+    .mcp-toggle input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .mcp-toggle-slider {
+      position: absolute;
+      cursor: pointer;
+      inset: 0;
+      background: #cbd5e1;
+      border-radius: 22px;
+      transition: background 0.2s;
+    }
+
+    .mcp-toggle-slider::before {
+      content: '';
+      position: absolute;
+      height: 16px;
+      width: 16px;
+      left: 3px;
+      bottom: 3px;
+      background: #fff;
+      border-radius: 50%;
+      transition: transform 0.2s;
+    }
+
+    .mcp-toggle input:checked + .mcp-toggle-slider {
+      background: #22c55e;
+    }
+
+    .mcp-toggle input:checked + .mcp-toggle-slider::before {
+      transform: translateX(18px);
+    }
+
+    .mcp-toggle input:disabled + .mcp-toggle-slider {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .mcp-toggle.loading .mcp-toggle-slider {
+      opacity: 0.5;
+    }
+
+    .pending-title {
+      margin: 0;
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: #92400e;
+    }
+
+    .pending-card {
+      border: 1px solid #fcd34d;
+      border-radius: 10px;
+      background: #fffbeb;
+      padding: 10px;
+      display: grid;
+      gap: 8px;
+    }
+
+    .pending-meta {
+      margin: 0;
+      font-size: 0.9rem;
+      color: #78350f;
+      line-height: 1.4;
+      white-space: pre-wrap;
+    }
+
+    .pending-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .pending-btn {
+      border: 1px solid transparent;
+      border-radius: 8px;
+      height: 32px;
+      padding: 0 10px;
+      font-size: 0.84rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .pending-btn.allow {
+      background: #dcfce7;
+      border-color: #86efac;
+      color: #14532d;
+    }
+
+    .pending-btn.always {
+      background: #e0f2fe;
+      border-color: #7dd3fc;
+      color: #0c4a6e;
+    }
+
+    .pending-btn.reject {
+      background: #fee2e2;
+      border-color: #fca5a5;
+      color: #7f1d1d;
+    }
+
+    .composer {
+      border-top: 1px solid var(--border);
+      padding: 14px;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      background: #ffffff;
+    }
+
+    .message.thinking {
+      align-self: flex-start;
+      background: var(--bot);
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 12px 16px;
+    }
+
+    .thinking-dots {
+      display: inline-flex;
+      gap: 4px;
+    }
+
+    .thinking-dots span {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--muted);
+      animation: thinking-bounce 1.4s infinite ease-in-out both;
+    }
+
+    .thinking-dots span:nth-child(1) { animation-delay: 0s; }
+    .thinking-dots span:nth-child(2) { animation-delay: 0.16s; }
+    .thinking-dots span:nth-child(3) { animation-delay: 0.32s; }
+
+    @keyframes thinking-bounce {
+      0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+      40% { transform: scale(1); opacity: 1; }
+    }
+
+    @media (max-width: 720px) {
+      body {
+        padding: 8px;
+      }
+
+      .shell {
+        height: calc(100vh - 16px);
+        border-radius: 14px;
+      }
+
+      .chat-header {
+        padding: 12px;
+      }
+
+      .chat {
+        padding: 12px;
+      }
+
+      .message {
+        max-width: 92%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <section id="loginView" class="view login-view">
+      <form id="loginForm" class="login-card">
+        <h1 class="login-title">KerenHR</h1>
+        <p class="login-subtitle">Sign in to start finding candidates.</p>
+
+        <label class="field-label" for="usernameInput">Username</label>
+        <input id="usernameInput" class="input" type="text" autocomplete="username" required>
+
+        <label class="field-label" for="passwordInput">Password</label>
+        <input id="passwordInput" class="input" type="password" autocomplete="current-password" required>
+
+        <p id="loginError" class="error hidden" role="alert"></p>
+
+        <button id="loginBtn" class="action-btn" type="submit">Sign in</button>
+      </form>
+    </section>
+
+    <section id="chatView" class="view chat-view hidden">
+      <header class="chat-header">
+        <div class="title-wrap">
+          <h2 class="chat-title">KerenHR</h2>
+          <p id="sessionMeta" class="session-meta">Signed in</p>
+        </div>
+        <div class="header-actions">
+          <button id="sessionBtn" class="ghost-btn" type="button" style="display:none;">Sessions</button>
+          <button id="skillBtn" class="ghost-btn" type="button" style="display:none;">Skills</button>
+          <button id="mcpBtn" class="ghost-btn" type="button" style="display:none;">MCP</button>
+          <button id="logoutBtn" class="logout-btn" type="button">Logout</button>
+        </div>
+      </header>
+
+      <section id="chat" class="chat" aria-live="polite"></section>
+
+      <section id="pendingPermissions" class="pending-pane hidden" aria-live="polite"></section>
+
+      <section id="sessionPane" class="session-pane hidden" aria-live="polite">
+        <p class="session-title">Sessions (Only your workspace)</p>
+        <div class="session-create">
+          <input id="sessionTitleInput" class="input" type="text" placeholder="Optional new session title" autocomplete="off">
+          <button id="createSessionBtn" class="action-btn" type="button">New</button>
+        </div>
+        <div id="sessionList" class="session-list"></div>
+      </section>
+
+      <section id="skillPane" class="skill-pane hidden" aria-live="polite">
+        <p class="skill-title">Your Skills</p>
+        <div id="skillList" class="skill-list"></div>
+        <hr class="skill-divider">
+        <p class="skill-title">Create New Skill</p>
+        <p class="skill-hint">Provide a name, description, and content for the skill.</p>
+        <label class="field-label" for="skillNameInput">Skill name</label>
+        <input
+          id="skillNameInput"
+          class="input"
+          type="text"
+          placeholder="example: java-controller-guardrails"
+          autocomplete="off"
+        >
+        <label class="field-label" for="skillDescInput">Description</label>
+        <input
+          id="skillDescInput"
+          class="input"
+          type="text"
+          placeholder="example: Reviews Java controllers for auth and validation issues"
+          autocomplete="off"
+        >
+        <label class="field-label" for="skillTextInput">Skill content</label>
+        <textarea
+          id="skillTextInput"
+          class="skill-input"
+          placeholder="Example: Create a skill that reviews Java controllers for auth and validation issues..."
+        ></textarea>
+         <div class="skill-actions">
+          <button id="submitSkillBtn" class="action-btn" type="button">Create</button>
+          <button id="cancelSkillBtn" class="ghost-btn" type="button">Cancel</button>
+        </div>
+      </section>
+
+      <div id="skillModal" class="skill-modal-overlay hidden">
+        <div class="skill-modal">
+          <div class="skill-modal-header">
+            <p id="skillModalTitle" class="skill-modal-title"></p>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <button id="skillModalEditBtn" class="skill-modal-edit-btn" type="button">Edit</button>
+              <button id="skillModalDeleteBtn" class="skill-modal-delete-btn" type="button">Delete</button>
+              <button id="skillModalClose" class="skill-modal-close" type="button">&times;</button>
+            </div>
+          </div>
+          <!-- View mode elements -->
+          <p id="skillModalDesc" class="skill-modal-desc"></p>
+          <pre id="skillModalContent" class="skill-modal-body"></pre>
+          <!-- Edit mode elements (hidden by default) -->
+          <input id="skillModalDescInput" class="skill-modal-desc-input hidden" type="text" placeholder="Description" />
+          <textarea id="skillModalContentTextarea" class="skill-modal-content-textarea hidden" placeholder="Skill content..."></textarea>
+          <div id="skillModalEditActions" class="skill-modal-edit-actions hidden">
+            <button id="skillModalCancelEdit" class="skill-modal-cancel-btn" type="button">Cancel</button>
+            <button id="skillModalSaveBtn" class="skill-modal-save-btn" type="button">Save</button>
+          </div>
+        </div>
+      </div>
+
+      <section id="mcpPane" class="mcp-pane hidden" aria-live="polite">
+        <p class="mcp-title">MCP Servers</p>
+        <p class="mcp-warning">Toggling a server affects all your active sessions. Running tasks will lose or gain MCP tools on their next step.</p>
+        <div id="mcpList" class="mcp-list"></div>
+      </section>
+
+      <form id="chatForm" class="composer">
+        <input
+          id="messageInput"
+          class="input"
+          type="text"
+          name="message"
+          placeholder="Describe a role or paste a job description..."
+          autocomplete="off"
+          required
+        >
+        <button id="sendBtn" class="action-btn" type="submit">Send</button>
+      </form>
+    </section>
+  </main>
+
+  <script src="/config.js"></script>
+  <script>
+    const TOKEN_KEY = 'kerenhr.jwt';
+    const USERNAME_KEY = 'kerenhr.username';
+    const AGENT_KEY = 'kerenhr.agent';
+    const API_BASE_KEY = 'kerenhr.apiBaseUrl';
+
+    function normalizeApiBaseUrl(value) {
+      const raw = (value || '').trim();
+      if (!raw) {
+        return '';
+      }
+      return raw.replace(/\/+$/, '');
+    }
+
+    const queryApiBaseUrl = new URLSearchParams(window.location.search).get('apiBaseUrl');
+    if (queryApiBaseUrl) {
+      localStorage.setItem(API_BASE_KEY, queryApiBaseUrl);
+    }
+
+    const configuredApiBaseUrl =
+      window.KERENHR_API_BASE_URL
+      || localStorage.getItem(API_BASE_KEY)
+      || '';
+
+    const API_BASE_URL = normalizeApiBaseUrl(configuredApiBaseUrl);
+
+    function apiUrl(path) {
+      if (!path) {
+        return API_BASE_URL;
+      }
+      const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+      return API_BASE_URL ? `${API_BASE_URL}${normalizedPath}` : normalizedPath;
+    }
+
+    const loginViewEl = document.getElementById('loginView');
+    const chatViewEl = document.getElementById('chatView');
+
+    const loginFormEl = document.getElementById('loginForm');
+    const usernameInputEl = document.getElementById('usernameInput');
+    const passwordInputEl = document.getElementById('passwordInput');
+    const loginBtnEl = document.getElementById('loginBtn');
+    const loginErrorEl = document.getElementById('loginError');
+
+    const sessionMetaEl = document.getElementById('sessionMeta');
+    const sessionBtnEl = document.getElementById('sessionBtn');
+    const skillBtnEl = document.getElementById('skillBtn');
+    const logoutBtnEl = document.getElementById('logoutBtn');
+
+    const chatEl = document.getElementById('chat');
+    const pendingPermissionsEl = document.getElementById('pendingPermissions');
+    const sessionPaneEl = document.getElementById('sessionPane');
+    const sessionTitleInputEl = document.getElementById('sessionTitleInput');
+    const createSessionBtnEl = document.getElementById('createSessionBtn');
+    const sessionListEl = document.getElementById('sessionList');
+    const skillPaneEl = document.getElementById('skillPane');
+    const skillListEl = document.getElementById('skillList');
+    const skillNameInputEl = document.getElementById('skillNameInput');
+    const skillDescInputEl = document.getElementById('skillDescInput');
+    const skillTextInputEl = document.getElementById('skillTextInput');
+    const submitSkillBtnEl = document.getElementById('submitSkillBtn');
+    const cancelSkillBtnEl = document.getElementById('cancelSkillBtn');
+    const skillModalEl = document.getElementById('skillModal');
+    const skillModalTitleEl = document.getElementById('skillModalTitle');
+    const skillModalDescEl = document.getElementById('skillModalDesc');
+    const skillModalContentEl = document.getElementById('skillModalContent');
+    const skillModalCloseEl = document.getElementById('skillModalClose');
+    const skillModalEditBtnEl = document.getElementById('skillModalEditBtn');
+    const skillModalDeleteBtnEl = document.getElementById('skillModalDeleteBtn');
+    const skillModalDescInputEl = document.getElementById('skillModalDescInput');
+    const skillModalContentTextareaEl = document.getElementById('skillModalContentTextarea');
+    const skillModalEditActionsEl = document.getElementById('skillModalEditActions');
+    const skillModalSaveBtnEl = document.getElementById('skillModalSaveBtn');
+    const skillModalCancelEditEl = document.getElementById('skillModalCancelEdit');
+    let currentSkillName = null;
+    const mcpBtnEl = document.getElementById('mcpBtn');
+    const mcpPaneEl = document.getElementById('mcpPane');
+    const mcpListEl = document.getElementById('mcpList');
+    const chatFormEl = document.getElementById('chatForm');
+    const inputEl = document.getElementById('messageInput');
+    const sendBtnEl = document.getElementById('sendBtn');
+    let permissionPollTimer = null;
+
+    function setLoginError(message) {
+      if (!message) {
+        loginErrorEl.classList.add('hidden');
+        loginErrorEl.textContent = '';
+        return;
+      }
+
+      loginErrorEl.textContent = message;
+      loginErrorEl.classList.remove('hidden');
+    }
+
+    function addMessage(text, role) {
+      const messageEl = document.createElement('div');
+      messageEl.className = `message ${role}`;
+      messageEl.textContent = text;
+      chatEl.appendChild(messageEl);
+      chatEl.scrollTop = chatEl.scrollHeight;
+    }
+
+    function showThinking() {
+      removeThinking();
+      const el = document.createElement('div');
+      el.className = 'message thinking';
+      el.id = 'thinkingIndicator';
+      el.innerHTML = '<span class="thinking-dots"><span></span><span></span><span></span></span>';
+      chatEl.appendChild(el);
+      chatEl.scrollTop = chatEl.scrollHeight;
+    }
+
+    function removeThinking() {
+      const el = document.getElementById('thinkingIndicator');
+      if (el) el.remove();
+    }
+
+    function readToken() {
+      return sessionStorage.getItem(TOKEN_KEY);
+    }
+
+    function showLogin(message) {
+      chatViewEl.classList.add('hidden');
+      loginViewEl.classList.remove('hidden');
+      setLoginError(message || '');
+      passwordInputEl.value = '';
+      usernameInputEl.focus();
+    }
+
+    function showChat(username, agentName) {
+      setLoginError('');
+      loginViewEl.classList.add('hidden');
+      chatViewEl.classList.remove('hidden');
+      sessionMetaEl.textContent = `Signed in as ${username}`;
+      inputEl.focus();
+
+      if (!chatEl.childElementCount) {
+        addMessage(`Welcome! Describe the role you're hiring for, or paste a job description.`, 'bot');
+      }
+    }
+
+    function logout(message) {
+      sessionStorage.removeItem(TOKEN_KEY);
+      sessionStorage.removeItem(USERNAME_KEY);
+      sessionStorage.removeItem(AGENT_KEY);
+      chatEl.innerHTML = '';
+      pendingPermissionsEl.innerHTML = '';
+      pendingPermissionsEl.classList.add('hidden');
+      sessionPaneEl.classList.add('hidden');
+      sessionTitleInputEl.value = '';
+      sessionListEl.innerHTML = '';
+      skillPaneEl.classList.add('hidden');
+      skillListEl.innerHTML = '';
+      skillNameInputEl.value = '';
+      skillDescInputEl.value = '';
+      skillTextInputEl.value = '';
+      closeSkillModal();
+      mcpPaneEl.classList.add('hidden');
+      mcpListEl.innerHTML = '';
+      if (permissionPollTimer) {
+        clearInterval(permissionPollTimer);
+        permissionPollTimer = null;
+      }
+      showLogin(message || '');
+    }
+
+    async function openSkillPane() {
+      sessionPaneEl.classList.add('hidden');
+      mcpPaneEl.classList.add('hidden');
+      skillPaneEl.classList.remove('hidden');
+      try {
+        const skills = await fetchSkills();
+        renderSkillList(skills);
+      } catch (_error) {
+        renderSkillList([]);
+      }
+    }
+
+    function closeSkillPane() {
+      skillPaneEl.classList.add('hidden');
+      skillNameInputEl.value = '';
+      skillDescInputEl.value = '';
+      skillTextInputEl.value = '';
+    }
+
+    // ── MCP Pane ──────────────────────────────────────────────
+
+    async function fetchMcpServers() {
+      const token = readToken();
+      if (!token) {
+        logout('Your session was not found. Please sign in again.');
+        return [];
+      }
+
+      const response = await fetch(apiUrl('/api/kerenhr/mcp'), {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.status === 401) {
+        logout('Session expired or invalid token. Please sign in again.');
+        return [];
+      }
+
+      if (!response.ok) {
+        throw new Error('Failed to load MCP servers');
+      }
+
+      return response.json();
+    }
+
+    async function toggleMcpServer(serverName, enabled) {
+      const token = readToken();
+      if (!token) {
+        logout('Your session was not found. Please sign in again.');
+        return null;
+      }
+
+      const response = await fetch(apiUrl(`/api/kerenhr/mcp/${encodeURIComponent(serverName)}`), {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ enabled })
+      });
+
+      if (response.status === 401) {
+        logout('Session expired or invalid token. Please sign in again.');
+        return null;
+      }
+
+      if (!response.ok) {
+        throw new Error('Failed to toggle MCP server');
+      }
+
+      return response.json();
+    }
+
+    function renderMcpList(servers) {
+      mcpListEl.innerHTML = '';
+
+      if (!Array.isArray(servers) || servers.length === 0) {
+        const empty = document.createElement('p');
+        empty.style.cssText = 'margin:0;font-size:0.85rem;color:#64748b;';
+        empty.textContent = 'No MCP servers configured.';
+        mcpListEl.appendChild(empty);
+        return;
+      }
+
+      const frag = document.createDocumentFragment();
+      servers.forEach((server) => {
+        const item = document.createElement('div');
+        item.className = 'mcp-item';
+        item.setAttribute('data-mcp-name', server.name);
+
+        const info = document.createElement('div');
+        info.className = 'mcp-item-info';
+
+        const dot = document.createElement('span');
+        dot.className = `mcp-status-dot ${server.status || 'unknown'}`;
+        dot.title = server.status || 'unknown';
+        info.appendChild(dot);
+
+        const labels = document.createElement('div');
+        labels.className = 'mcp-item-labels';
+
+        const name = document.createElement('p');
+        name.className = 'mcp-item-name';
+        name.textContent = server.name;
+        labels.appendChild(name);
+
+        const statusLabel = document.createElement('p');
+        statusLabel.className = 'mcp-item-status';
+        statusLabel.textContent = server.status || 'unknown';
+        labels.appendChild(statusLabel);
+
+        if (server.error) {
+          const errorLabel = document.createElement('p');
+          errorLabel.className = 'mcp-item-error';
+          errorLabel.textContent = server.error;
+          labels.appendChild(errorLabel);
+        }
+
+        info.appendChild(labels);
+        item.appendChild(info);
+
+        const isOn = server.status === 'connected';
+        const isToggleable = server.status !== 'needs_auth' && server.status !== 'needs_client_registration';
+
+        const toggle = document.createElement('label');
+        toggle.className = 'mcp-toggle';
+
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.checked = isOn;
+        checkbox.disabled = !isToggleable;
+        checkbox.setAttribute('data-mcp-name', server.name);
+
+        checkbox.addEventListener('change', async (e) => {
+          const newEnabled = e.target.checked;
+          const mcpName = e.target.getAttribute('data-mcp-name');
+          toggle.classList.add('loading');
+          checkbox.disabled = true;
+
+          try {
+            const updated = await toggleMcpServer(mcpName, newEnabled);
+            if (updated) {
+              // Refresh full list to get accurate statuses
+              const allServers = await fetchMcpServers();
+              renderMcpList(allServers);
+            } else {
+              // Revert on failure
+              checkbox.checked = !newEnabled;
+            }
+          } catch (err) {
+            addMessage(`Error toggling ${mcpName}: ${err.message}`, 'error');
+            checkbox.checked = !newEnabled;
+          } finally {
+            toggle.classList.remove('loading');
+            checkbox.disabled = !isToggleable;
+          }
+        });
+
+        const slider = document.createElement('span');
+        slider.className = 'mcp-toggle-slider';
+
+        toggle.appendChild(checkbox);
+        toggle.appendChild(slider);
+        item.appendChild(toggle);
+
+        frag.appendChild(item);
+      });
+
+      mcpListEl.appendChild(frag);
+    }
+
+    async function openMcpPane() {
+      sessionPaneEl.classList.add('hidden');
+      skillPaneEl.classList.add('hidden');
+      mcpPaneEl.classList.remove('hidden');
+      try {
+        const servers = await fetchMcpServers();
+        renderMcpList(servers);
+      } catch (_error) {
+        renderMcpList([]);
+      }
+    }
+
+    function closeMcpPane() {
+      mcpPaneEl.classList.add('hidden');
+    }
+
+    // ── End MCP Pane ──────────────────────────────────────────
+
+    async function fetchSkills() {
+      const token = readToken();
+      if (!token) {
+        logout('Your session was not found. Please sign in again.');
+        return [];
+      }
+
+      const response = await fetch(apiUrl('/api/kerenhr/skills'), {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.status === 401) {
+        logout('Session expired or invalid token. Please sign in again.');
+        return [];
+      }
+
+      if (!response.ok) {
+        throw new Error('Failed to load skills');
+      }
+
+      return response.json();
+    }
+
+    async function fetchSkillContent(skillName) {
+      const token = readToken();
+      if (!token) {
+        logout('Your session was not found. Please sign in again.');
+        throw new Error('Authentication required');
+      }
+
+      const response = await fetch(apiUrl(`/api/kerenhr/skills/${encodeURIComponent(skillName)}`), {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.status === 401) {
+        logout('Session expired or invalid token. Please sign in again.');
+        throw new Error('Authentication required');
+      }
+
+      if (!response.ok) {
+        throw new Error('Failed to load skill content');
+      }
+
+      return response.json();
+    }
+
+    async function openSkillModal(skillName) {
+      currentSkillName = skillName;
+      exitEditMode();
+      skillModalTitleEl.textContent = skillName;
+      skillModalDescEl.textContent = 'Loading...';
+      skillModalContentEl.textContent = '';
+      skillModalEl.classList.remove('hidden');
+
+      try {
+        const detail = await fetchSkillContent(skillName);
+        skillModalTitleEl.textContent = detail.name || skillName;
+        skillModalDescEl.textContent = detail.description || '';
+        skillModalContentEl.textContent = detail.content || '(No content)';
+      } catch (error) {
+        if (error.message !== 'Authentication required') {
+          skillModalDescEl.textContent = '';
+          skillModalContentEl.textContent = 'Failed to load skill content.';
+        }
+      }
+    }
+
+    function closeSkillModal() {
+      exitEditMode();
+      currentSkillName = null;
+      skillModalDeleteBtnEl.disabled = false;
+      skillModalEl.classList.add('hidden');
+      skillModalTitleEl.textContent = '';
+      skillModalDescEl.textContent = '';
+      skillModalContentEl.textContent = '';
+    }
+
+    function enterEditMode() {
+      skillModalDescInputEl.value = skillModalDescEl.textContent || '';
+      skillModalContentTextareaEl.value = skillModalContentEl.textContent || '';
+      // Hide view elements, show edit elements
+      skillModalDescEl.classList.add('hidden');
+      skillModalContentEl.classList.add('hidden');
+      skillModalEditBtnEl.classList.add('hidden');
+      skillModalDeleteBtnEl.classList.add('hidden');
+      skillModalDescInputEl.classList.remove('hidden');
+      skillModalContentTextareaEl.classList.remove('hidden');
+      skillModalEditActionsEl.classList.remove('hidden');
+      skillModalDescInputEl.focus();
+    }
+
+    function exitEditMode() {
+      skillModalDescInputEl.classList.add('hidden');
+      skillModalContentTextareaEl.classList.add('hidden');
+      skillModalEditActionsEl.classList.add('hidden');
+      skillModalDescEl.classList.remove('hidden');
+      skillModalContentEl.classList.remove('hidden');
+      skillModalEditBtnEl.classList.remove('hidden');
+      skillModalDeleteBtnEl.classList.remove('hidden');
+      skillModalSaveBtnEl.disabled = false;
+    }
+
+    async function updateSkill(skillName, description, content) {
+      const token = readToken();
+      if (!token) {
+        logout('Your session was not found. Please sign in again.');
+        throw new Error('Authentication required');
+      }
+
+      const response = await fetch(apiUrl(`/api/kerenhr/skills/${encodeURIComponent(skillName)}`), {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ description, content })
+      });
+
+      if (response.status === 401) {
+        logout('Session expired or invalid token. Please sign in again.');
+        throw new Error('Authentication required');
+      }
+
+      if (!response.ok) {
+        throw new Error('Failed to update skill');
+      }
+
+      return response.json();
+    }
+
+    function renderSkillList(skills) {
+      skillListEl.innerHTML = '';
+      if (!Array.isArray(skills) || skills.length === 0) {
+        const empty = document.createElement('p');
+        empty.className = 'skill-item-desc';
+        empty.textContent = 'No skills created yet. Use the form below to create your first skill.';
+        skillListEl.appendChild(empty);
+        return;
+      }
+
+      const frag = document.createDocumentFragment();
+      skills.forEach((skill) => {
+        const card = document.createElement('article');
+        card.className = 'skill-item';
+        card.setAttribute('data-skill-name', skill.name);
+
+        const header = document.createElement('div');
+        header.className = 'skill-item-header';
+
+        const name = document.createElement('p');
+        name.className = 'skill-item-name';
+        name.textContent = skill.name;
+        header.appendChild(name);
+
+        card.appendChild(header);
+
+        if (skill.description) {
+          const desc = document.createElement('p');
+          desc.className = 'skill-item-desc';
+          desc.textContent = skill.description;
+          card.appendChild(desc);
+        }
+
+        frag.appendChild(card);
+      });
+
+      skillListEl.appendChild(frag);
+    }
+
+    function formatTime(epochMillis) {
+      if (!epochMillis) {
+        return 'unknown';
+      }
+      const date = new Date(epochMillis);
+      if (Number.isNaN(date.getTime())) {
+        return 'unknown';
+      }
+      return date.toLocaleString();
+    }
+
+    function renderSessionList(sessions) {
+      sessionListEl.innerHTML = '';
+      if (!Array.isArray(sessions) || sessions.length === 0) {
+        const empty = document.createElement('p');
+        empty.className = 'session-item-meta';
+        empty.textContent = 'No sessions found in your workspace.';
+        sessionListEl.appendChild(empty);
+        return;
+      }
+
+      const frag = document.createDocumentFragment();
+      sessions.forEach((session) => {
+        const card = document.createElement('article');
+        card.className = 'session-item';
+
+        const header = document.createElement('div');
+        header.className = 'session-item-header';
+
+        const title = document.createElement('p');
+        title.className = 'session-item-title';
+        title.textContent = session.title || session.id;
+        header.appendChild(title);
+
+        if (session.active) {
+          const activePill = document.createElement('span');
+          activePill.className = 'session-pill';
+          activePill.textContent = 'Active';
+          header.appendChild(activePill);
+        }
+
+        const meta = document.createElement('p');
+        meta.className = 'session-item-meta';
+        meta.textContent = `Updated: ${formatTime(session.updatedAt)} • ID: ${session.id}`;
+
+        card.appendChild(header);
+        card.appendChild(meta);
+
+        const actions = document.createElement('div');
+        actions.className = 'session-item-actions';
+
+        if (!session.active) {
+          const selectBtn = document.createElement('button');
+          selectBtn.className = 'session-select-btn session-action-btn';
+          selectBtn.type = 'button';
+          selectBtn.textContent = 'Use this session';
+          selectBtn.setAttribute('data-session-id', session.id || '');
+          selectBtn.setAttribute('data-action', 'select');
+          actions.appendChild(selectBtn);
+        }
+
+        const renameBtn = document.createElement('button');
+        renameBtn.className = 'session-action-btn rename';
+        renameBtn.type = 'button';
+        renameBtn.textContent = 'Rename';
+        renameBtn.setAttribute('data-session-id', session.id || '');
+        renameBtn.setAttribute('data-session-title', session.title || '');
+        renameBtn.setAttribute('data-action', 'rename');
+        actions.appendChild(renameBtn);
+
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'session-action-btn delete';
+        deleteBtn.type = 'button';
+        deleteBtn.textContent = 'Delete';
+        deleteBtn.setAttribute('data-session-id', session.id || '');
+        deleteBtn.setAttribute('data-action', 'delete');
+        actions.appendChild(deleteBtn);
+
+        card.appendChild(actions);
+
+        frag.appendChild(card);
+      });
+
+      sessionListEl.appendChild(frag);
+    }
+
+    async function fetchSessions() {
+      const token = readToken();
+      if (!token) {
+        logout('Your session was not found. Please sign in again.');
+        return [];
+      }
+
+      const response = await fetch(apiUrl('/api/kerenhr/sessions?limit=30'), {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.status === 401) {
+        logout('Session expired or invalid token. Please sign in again.');
+        return [];
+      }
+
+      if (!response.ok) {
+        throw new Error('Failed to load sessions');
+      }
+
+      return response.json();
+    }
+
+    async function createSession(title) {
+      const token = readToken();
+      if (!token) {
+        logout('Your session was not found. Please sign in again.');
+        throw new Error('Not authenticated');
+      }
+
+      const response = await fetch(apiUrl('/api/kerenhr/sessions'), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ title })
+      });
+
+      if (response.status === 401) {
+        logout('Session expired or invalid token. Please sign in again.');
+        throw new Error('Authentication required');
+      }
+
+      if (!response.ok) {
+        throw new Error('Failed to create session');
+      }
+
+      return response.json();
+    }
+
+    async function selectSession(sessionId) {
+      const token = readToken();
+      if (!token) {
+        logout('Your session was not found. Please sign in again.');
+        throw new Error('Not authenticated');
+      }
+
+      const response = await fetch(apiUrl(`/api/kerenhr/sessions/${encodeURIComponent(sessionId)}/select`), {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.status === 401) {
+        logout('Session expired or invalid token. Please sign in again.');
+        throw new Error('Authentication required');
+      }
+
+      if (!response.ok) {
+        throw new Error('Failed to select session');
+      }
+
+      const payload = await response.json();
+      return Boolean(payload.success);
+    }
+
+    async function renameSession(sessionId, title) {
+      const token = readToken();
+      if (!token) {
+        logout('Your session was not found. Please sign in again.');
+        throw new Error('Not authenticated');
+      }
+
+      const response = await fetch(apiUrl(`/api/kerenhr/sessions/${encodeURIComponent(sessionId)}`), {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ title })
+      });
+
+      if (response.status === 401) {
+        logout('Session expired or invalid token. Please sign in again.');
+        throw new Error('Authentication required');
+      }
+
+      if (!response.ok) {
+        throw new Error('Failed to rename session');
+      }
+
+      return response.json();
+    }
+
+    async function deleteSession(sessionId) {
+      const token = readToken();
+      if (!token) {
+        logout('Your session was not found. Please sign in again.');
+        throw new Error('Not authenticated');
+      }
+
+      const response = await fetch(apiUrl(`/api/kerenhr/sessions/${encodeURIComponent(sessionId)}`), {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.status === 401) {
+        logout('Session expired or invalid token. Please sign in again.');
+        throw new Error('Authentication required');
+      }
+
+      if (!response.ok) {
+        throw new Error('Failed to delete session');
+      }
+
+      const payload = await response.json();
+      return Boolean(payload.success);
+    }
+
+    async function refreshSessions() {
+      const sessions = await fetchSessions();
+      renderSessionList(sessions);
+      return sessions;
+    }
+
+    async function openSessionPane() {
+      closeSkillPane();
+      closeMcpPane();
+      sessionPaneEl.classList.remove('hidden');
+      await refreshSessions();
+      sessionTitleInputEl.focus();
+    }
+
+    function closeSessionPane() {
+      sessionPaneEl.classList.add('hidden');
+      sessionTitleInputEl.value = '';
+    }
+
+    function renderPendingPermissions(permissions) {
+      if (!permissions || !permissions.length) {
+        pendingPermissionsEl.innerHTML = '';
+        pendingPermissionsEl.classList.add('hidden');
+        return;
+      }
+
+      const title = document.createElement('p');
+      title.className = 'pending-title';
+      title.textContent = 'The assistant needs your permission';
+
+      const frag = document.createDocumentFragment();
+      frag.appendChild(title);
+
+      function describePermission(item) {
+        const type = (item.permission || '').toLowerCase();
+        if (type.includes('browser') || type.includes('playwright') || type.includes('navigate'))
+          return 'The assistant needs to browse the web to search for candidates.';
+        if (type.includes('read'))
+          return 'The assistant needs to read a file.';
+        if (type.includes('write') || type.includes('edit'))
+          return 'The assistant needs to save information to a file.';
+        if (type.includes('bash') || type.includes('shell') || type.includes('exec'))
+          return 'The assistant needs to run a command.';
+        return `The assistant is requesting permission: ${item.permission || 'unknown'}`;
+      }
+
+      permissions.forEach((item) => {
+        const card = document.createElement('article');
+        card.className = 'pending-card';
+
+        const meta = document.createElement('p');
+        meta.className = 'pending-meta';
+        meta.textContent = describePermission(item);
+        card.appendChild(meta);
+
+        const actions = document.createElement('div');
+        actions.className = 'pending-actions';
+
+        const onceBtn = document.createElement('button');
+        onceBtn.className = 'pending-btn allow';
+        onceBtn.type = 'button';
+        onceBtn.textContent = 'Allow';
+        onceBtn.setAttribute('data-request-id', item.id || '');
+        onceBtn.setAttribute('data-reply', 'once');
+
+        const alwaysBtn = document.createElement('button');
+        alwaysBtn.className = 'pending-btn always';
+        alwaysBtn.type = 'button';
+        alwaysBtn.textContent = 'Always allow';
+        alwaysBtn.setAttribute('data-request-id', item.id || '');
+        alwaysBtn.setAttribute('data-reply', 'always');
+
+        const rejectBtn = document.createElement('button');
+        rejectBtn.className = 'pending-btn reject';
+        rejectBtn.type = 'button';
+        rejectBtn.textContent = 'Deny';
+        rejectBtn.setAttribute('data-request-id', item.id || '');
+        rejectBtn.setAttribute('data-reply', 'reject');
+
+        actions.appendChild(onceBtn);
+        actions.appendChild(alwaysBtn);
+        actions.appendChild(rejectBtn);
+        card.appendChild(actions);
+
+        frag.appendChild(card);
+      });
+
+      pendingPermissionsEl.innerHTML = '';
+      pendingPermissionsEl.appendChild(frag);
+      pendingPermissionsEl.classList.remove('hidden');
+    }
+
+    async function fetchPendingPermissions() {
+      const token = readToken();
+      if (!token) {
+        return [];
+      }
+
+      const response = await fetch(apiUrl('/api/kerenhr/permissions/pending'), {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.status === 401) {
+        logout('Session expired or invalid token. Please sign in again.');
+        return [];
+      }
+
+      if (!response.ok) {
+        return [];
+      }
+
+      return response.json();
+    }
+
+    async function refreshPendingPermissions() {
+      try {
+        const permissions = await fetchPendingPermissions();
+        renderPendingPermissions(permissions);
+        return permissions.length;
+      } catch (_error) {
+        return 0;
+      }
+    }
+
+    function startPermissionPolling() {
+      if (permissionPollTimer) {
+        return;
+      }
+
+      void refreshPendingPermissions();
+      permissionPollTimer = setInterval(() => {
+        void refreshPendingPermissions();
+      }, 2000);
+    }
+
+    function stopPermissionPolling() {
+      if (!permissionPollTimer) {
+        return;
+      }
+      clearInterval(permissionPollTimer);
+      permissionPollTimer = null;
+    }
+
+    async function replyPermission(requestId, reply) {
+      const token = readToken();
+      if (!token) {
+        logout('Your session was not found. Please sign in again.');
+        return false;
+      }
+
+      const response = await fetch(apiUrl(`/api/kerenhr/permissions/${encodeURIComponent(requestId)}/reply`), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ reply })
+      });
+
+      if (response.status === 401) {
+        logout('Session expired or invalid token. Please sign in again.');
+        return false;
+      }
+
+      if (!response.ok) {
+        return false;
+      }
+
+      const payload = await response.json();
+      return Boolean(payload.success);
+    }
+
+    async function login(username, password) {
+      const response = await fetch(apiUrl('/api/auth/login'), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ username, password })
+      });
+
+      if (!response.ok) {
+        let details = '';
+        try {
+          const err = await response.json();
+          details = err.detail || err.message || '';
+        } catch (_e) {
+          details = await response.text();
+        }
+        throw new Error(details || 'Invalid username or password');
+      }
+
+      return response.json();
+    }
+
+    async function sendMessage(message) {
+      const token = readToken();
+      if (!token) {
+        logout('Your session was not found. Please sign in again.');
+        throw new Error('Not authenticated');
+      }
+
+      const response = await fetch(apiUrl('/api/kerenhr/chat'), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ message })
+      });
+
+      if (response.status === 401) {
+        logout('Session expired or invalid token. Please sign in again.');
+        throw new Error('Authentication required');
+      }
+
+      if (!response.ok) {
+        let details = '';
+        try {
+          const err = await response.json();
+          details = err.detail || err.message || JSON.stringify(err);
+        } catch (_e) {
+          details = await response.text();
+        }
+        throw new Error(details || `Request failed with status ${response.status}`);
+      }
+
+      const data = await response.json();
+      return data.response || '';
+    }
+
+    async function createSkill(skillName, description, content) {
+      const token = readToken();
+      if (!token) {
+        logout('Your session was not found. Please sign in again.');
+        throw new Error('Not authenticated');
+      }
+
+      const response = await fetch(apiUrl('/api/kerenhr/skills'), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ skillName, description, content })
+      });
+
+      if (response.status === 401) {
+        logout('Session expired or invalid token. Please sign in again.');
+        throw new Error('Authentication required');
+      }
+
+      if (!response.ok) {
+        let details = '';
+        try {
+          const err = await response.json();
+          details = err.detail || err.message || JSON.stringify(err);
+        } catch (_e) {
+          details = await response.text();
+        }
+        throw new Error(details || `Skill creation failed with status ${response.status}`);
+      }
+
+      return response.json();
+    }
+
+    async function deleteSkill(skillName) {
+      const token = readToken();
+      if (!token) {
+        logout('Your session was not found. Please sign in again.');
+        throw new Error('Not authenticated');
+      }
+
+      const response = await fetch(apiUrl(`/api/kerenhr/skills/${encodeURIComponent(skillName)}`), {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.status === 401) {
+        logout('Session expired or invalid token. Please sign in again.');
+        throw new Error('Authentication required');
+      }
+
+      if (!response.ok) {
+        throw new Error('Failed to delete skill');
+      }
+
+      const payload = await response.json();
+      return Boolean(payload.success);
+    }
+
+    loginFormEl.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const username = usernameInputEl.value.trim();
+      const password = passwordInputEl.value;
+
+      if (!username || !password) {
+        setLoginError('Username and password are required.');
+        return;
+      }
+
+      loginBtnEl.disabled = true;
+      setLoginError('');
+
+      try {
+        const payload = await login(username, password);
+        if (!payload.token) {
+          throw new Error('Missing token in login response');
+        }
+
+        const loggedInUser = payload.username || username;
+        const agentName = payload.agentName || `${loggedInUser}-agent`;
+        sessionStorage.setItem(TOKEN_KEY, payload.token);
+        sessionStorage.setItem(USERNAME_KEY, loggedInUser);
+        sessionStorage.setItem(AGENT_KEY, agentName);
+        showChat(loggedInUser, agentName);
+      } catch (error) {
+        setLoginError(error.message || 'Unable to sign in');
+      } finally {
+        loginBtnEl.disabled = false;
+      }
+    });
+
+    chatFormEl.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const message = inputEl.value.trim();
+      if (!message) {
+        return;
+      }
+
+      addMessage(message, 'user');
+      inputEl.value = '';
+      inputEl.focus();
+
+      sendBtnEl.disabled = true;
+      showThinking();
+      startPermissionPolling();
+      try {
+        const reply = await sendMessage(message);
+        removeThinking();
+        addMessage(reply || '(no response)', 'bot');
+      } catch (error) {
+        removeThinking();
+        if (error.message !== 'Authentication required') {
+          addMessage(`Error: ${error.message}`, 'error');
+        }
+      } finally {
+        const pendingCount = await refreshPendingPermissions();
+        if (pendingCount === 0) {
+          stopPermissionPolling();
+        }
+        sendBtnEl.disabled = false;
+      }
+    });
+
+    pendingPermissionsEl.addEventListener('click', async (event) => {
+      const target = event.target;
+      if (!(target instanceof HTMLButtonElement)) {
+        return;
+      }
+
+      const requestId = target.getAttribute('data-request-id');
+      const reply = target.getAttribute('data-reply');
+      if (!requestId || !reply) {
+        return;
+      }
+
+      target.disabled = true;
+      const success = await replyPermission(requestId, reply);
+      if (!success) {
+        addMessage('Error: failed to send permission reply.', 'error');
+      }
+      await refreshPendingPermissions();
+      target.disabled = false;
+    });
+
+    skillBtnEl.addEventListener('click', async () => {
+      if (skillPaneEl.classList.contains('hidden')) {
+        try {
+          await openSkillPane();
+        } catch (_error) {
+          addMessage('Error: failed to load skills.', 'error');
+        }
+        return;
+      }
+      closeSkillPane();
+    });
+
+    mcpBtnEl.addEventListener('click', async () => {
+      if (mcpPaneEl.classList.contains('hidden')) {
+        try {
+          await openMcpPane();
+        } catch (_error) {
+          addMessage('Error: failed to load MCP servers.', 'error');
+        }
+        return;
+      }
+      closeMcpPane();
+    });
+
+    cancelSkillBtnEl.addEventListener('click', () => {
+      closeSkillPane();
+    });
+
+    skillListEl.addEventListener('click', async (event) => {
+      const target = event.target;
+
+      // Handle card clicks to view skill content
+      const card = target.closest('.skill-item');
+      if (card) {
+        const skillName = card.getAttribute('data-skill-name');
+        if (skillName) {
+          await openSkillModal(skillName);
+        }
+      }
+    });
+
+    // Modal dismiss: close button
+    skillModalCloseEl.addEventListener('click', () => {
+      closeSkillModal();
+    });
+
+    // Modal dismiss: click outside the modal
+    skillModalEl.addEventListener('click', (event) => {
+      if (event.target === skillModalEl) {
+        closeSkillModal();
+      }
+    });
+
+    // Modal dismiss: Escape key
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && !skillModalEl.classList.contains('hidden')) {
+        closeSkillModal();
+      }
+    });
+
+    // Modal delete: click handler
+    skillModalDeleteBtnEl.addEventListener('click', async () => {
+      if (!currentSkillName) return;
+
+      const confirmed = window.confirm(`Are you sure you want to delete "${currentSkillName}"? This cannot be undone.`);
+      if (!confirmed) return;
+
+      skillModalDeleteBtnEl.disabled = true;
+      try {
+        const success = await deleteSkill(currentSkillName);
+        if (!success) {
+          addMessage('Error: failed to delete skill.', 'error');
+          skillModalDeleteBtnEl.disabled = false;
+          return;
+        }
+
+        addMessage(`Skill "${currentSkillName}" has been deleted.`, 'bot');
+        closeSkillModal();
+        try {
+          const updatedSkills = await fetchSkills();
+          renderSkillList(updatedSkills);
+        } catch (_refreshError) {
+          // Deletion succeeded, list refresh is best-effort
+        }
+      } catch (error) {
+        if (error.message !== 'Authentication required') {
+          addMessage(`Error: ${error.message}`, 'error');
+        }
+        skillModalDeleteBtnEl.disabled = false;
+      }
+    });
+
+    // Edit mode: enter
+    skillModalEditBtnEl.addEventListener('click', () => {
+      enterEditMode();
+    });
+
+    // Edit mode: cancel
+    skillModalCancelEditEl.addEventListener('click', () => {
+      exitEditMode();
+    });
+
+    // Edit mode: save
+    skillModalSaveBtnEl.addEventListener('click', async () => {
+      const description = skillModalDescInputEl.value.trim();
+      const content = skillModalContentTextareaEl.value.trim();
+
+      if (!description) {
+        skillModalDescInputEl.focus();
+        return;
+      }
+      if (!content) {
+        skillModalContentTextareaEl.focus();
+        return;
+      }
+
+      skillModalSaveBtnEl.disabled = true;
+      try {
+        const updated = await updateSkill(currentSkillName, description, content);
+        // Update view mode with new values
+        skillModalDescEl.textContent = updated.description || '';
+        skillModalContentEl.textContent = updated.content || '(No content)';
+        exitEditMode();
+        // Also refresh the skill list to reflect any description change
+        try {
+          const updatedSkills = await fetchSkills();
+          renderSkillList(updatedSkills);
+        } catch (_e) { /* ignore refresh failure */ }
+      } catch (error) {
+        if (error.message !== 'Authentication required') {
+          skillModalSaveBtnEl.disabled = false;
+          addMessage('Failed to save skill. Please try again.', 'error');
+        }
+      }
+    });
+
+    submitSkillBtnEl.addEventListener('click', async () => {
+      const skillName = skillNameInputEl.value.trim();
+      const description = skillDescInputEl.value.trim();
+      const content = skillTextInputEl.value.trim();
+      if (!skillName) {
+        addMessage('Error: skill name is required.', 'error');
+        return;
+      }
+      if (!description) {
+        addMessage('Error: skill description is required.', 'error');
+        return;
+      }
+      if (!content) {
+        addMessage('Error: skill content is required.', 'error');
+        return;
+      }
+
+      submitSkillBtnEl.disabled = true;
+      cancelSkillBtnEl.disabled = true;
+      addMessage('Creating skill...', 'bot');
+
+      try {
+        const payload = await createSkill(skillName, description, content);
+        addMessage(`Skill "${payload.name || skillName}" created successfully.`, 'bot');
+        skillNameInputEl.value = '';
+        skillDescInputEl.value = '';
+        skillTextInputEl.value = '';
+        try {
+          const updatedSkills = await fetchSkills();
+          renderSkillList(updatedSkills);
+        } catch (_refreshError) {
+          // Skill was created, list refresh is best-effort
+        }
+      } catch (error) {
+        if (error.message !== 'Authentication required') {
+          addMessage(`Skill creation failed: ${error.message}`, 'error');
+        }
+      } finally {
+        const pendingCount = await refreshPendingPermissions();
+        if (pendingCount === 0) {
+          stopPermissionPolling();
+        }
+        submitSkillBtnEl.disabled = false;
+        cancelSkillBtnEl.disabled = false;
+      }
+    });
+
+    logoutBtnEl.addEventListener('click', () => {
+      logout('You have been logged out.');
+    });
+
+    sessionBtnEl.addEventListener('click', async () => {
+      if (sessionPaneEl.classList.contains('hidden')) {
+        try {
+          await openSessionPane();
+        } catch (_error) {
+          addMessage('Error: failed to load sessions.', 'error');
+        }
+        return;
+      }
+      closeSessionPane();
+    });
+
+    createSessionBtnEl.addEventListener('click', async () => {
+      const title = sessionTitleInputEl.value.trim();
+      createSessionBtnEl.disabled = true;
+      try {
+        const created = await createSession(title);
+        addMessage(`Switched to new session: ${created.title || created.id}`, 'bot');
+        sessionTitleInputEl.value = '';
+        await refreshSessions();
+      } catch (error) {
+        if (error.message !== 'Authentication required') {
+          addMessage(`Error: ${error.message}`, 'error');
+        }
+      } finally {
+        createSessionBtnEl.disabled = false;
+      }
+    });
+
+    sessionListEl.addEventListener('click', async (event) => {
+      const target = event.target;
+      if (!(target instanceof HTMLButtonElement)) {
+        return;
+      }
+
+      const sessionId = target.getAttribute('data-session-id');
+      const action = target.getAttribute('data-action');
+      if (!sessionId || !action) {
+        return;
+      }
+
+      target.disabled = true;
+      try {
+        if (action === 'select') {
+          const success = await selectSession(sessionId);
+          if (!success) {
+            addMessage('Error: session does not belong to your workspace.', 'error');
+            return;
+          }
+          addMessage(`Switched active session to ${sessionId}`, 'bot');
+          await refreshSessions();
+          return;
+        }
+
+        if (action === 'rename') {
+          const currentTitle = target.getAttribute('data-session-title') || '';
+          const nextTitle = window.prompt('Rename session', currentTitle);
+          if (nextTitle === null) {
+            return;
+          }
+          const trimmedTitle = nextTitle.trim();
+          if (!trimmedTitle) {
+            addMessage('Error: session title cannot be empty.', 'error');
+            return;
+          }
+
+          const updated = await renameSession(sessionId, trimmedTitle);
+          addMessage(`Session renamed to ${updated.title || trimmedTitle}`, 'bot');
+          await refreshSessions();
+          return;
+        }
+
+        if (action === 'delete') {
+          const confirmed = window.confirm('Delete this session permanently?');
+          if (!confirmed) {
+            return;
+          }
+
+          const success = await deleteSession(sessionId);
+          if (!success) {
+            addMessage('Error: failed to delete session.', 'error');
+            return;
+          }
+
+          addMessage(`Deleted session ${sessionId}`, 'bot');
+          await refreshSessions();
+        }
+      } catch (error) {
+        if (error.message !== 'Authentication required') {
+          addMessage(`Error: ${error.message}`, 'error');
+        }
+      } finally {
+        target.disabled = false;
+      }
+    });
+
+    const existingToken = sessionStorage.getItem(TOKEN_KEY);
+    const existingUser = sessionStorage.getItem(USERNAME_KEY);
+    const existingAgent = sessionStorage.getItem(AGENT_KEY);
+    if (existingToken && existingUser) {
+      showChat(existingUser, existingAgent || `${existingUser}-agent`);
+    } else {
+      showLogin('');
+    }
+  </script>
+</body>
+</html>

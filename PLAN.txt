@@ -1,0 +1,256 @@
+KEREN-HR MVP EXECUTION PLAN
+============================
+
+Goal
+----
+Transform the current generic AI chat app (base66) into an HR-focused
+recruiting tool called "keren-hr" with minimal changes -- just enough
+to reframe the experience, strip away developer-facing features, and
+validate the core value proposition with a real user.
+
+Product One-Liner
+-----------------
+"Paste a job description, get ranked candidates from LinkedIn."
+
+Target User
+-----------
+HR recruiters and hiring managers at small-to-mid companies who source
+candidates manually on LinkedIn. Not technical, but comfortable using
+web apps. First user: Atalya (your girlfriend).
+
+
+==========================================================================
+CHANGES
+==========================================================================
+
+
+CHANGE 1: Rename app from "base66" to "keren-hr" (across entire project)
+-------------------------------------------------------------------------
+
+Files affected:
+  - src/main/resources/static/index.html
+    - <title> tag: "base66" -> "keren-hr"
+    - Login title (line ~926): "base66 login" -> "keren-hr"
+    - Chat header title (line ~944): "base66" -> "keren-hr"
+  - src/main/resources/static/index.html (JavaScript section)
+    - sessionStorage keys: "base66.jwt" -> "kerenhr.jwt"
+    - sessionStorage keys: "base66.username" -> "kerenhr.username"
+    - sessionStorage keys: "base66.agentName" -> "kerenhr.agentName"
+  - README.md: Update all references from "base66"/"Base66" to "keren-hr"/"Keren-HR"
+  - pom.xml: artifactId and name if they reference base66
+  - docker-compose.yml: service name if it references base66
+  - Dockerfile: any labels or references
+  - application.properties: any references
+  - Java source files: package names stay (renaming packages is high risk,
+    low value for MVP). But update any user-facing strings, log messages,
+    or comments that say "Base66" to "Keren-HR"
+
+Effort: 20 min
+Risk: Low (string replacements, no logic changes)
+
+
+CHANGE 2: Login screen -- reframe as HR product
+------------------------------------------------
+
+File: src/main/resources/static/index.html
+
+What changes:
+  - Login title: "keren-hr" (done in Change 1)
+  - Login subtitle (line ~927):
+    OLD: "Sign in with one of your configured users to access the chat."
+    NEW: "Sign in to start sourcing candidates."
+
+What stays: Username/password fields, sign-in button, error handling.
+
+Effort: 2 min
+Risk: Zero
+
+
+CHANGE 3: Chat header -- remove developer-facing buttons
+---------------------------------------------------------
+
+File: src/main/resources/static/index.html
+
+What changes:
+  - Skills button (line ~949): Add style="display:none;" to hide it
+  - MCP button (line ~950): Add style="display:none;" to hide it
+  - Sessions button (line ~948): Already hidden, leave as-is
+  - Session meta text (line ~945): Remove "Agent: {agentName}" part,
+    just show "Signed in as {user}"
+
+What stays: Header structure, logout button, chat title.
+
+Effort: 5 min
+Risk: Zero
+
+
+CHANGE 4: Welcome message -- set the HR context
+------------------------------------------------
+
+File: src/main/resources/static/index.html (JavaScript section)
+
+What changes:
+  - Find the welcome message after login (currently says something like
+    "Welcome {username}. You are now authenticated.")
+  - Change to: "Welcome! Describe the role you're hiring for, or paste
+    a job description, and I'll search LinkedIn for candidates."
+
+What stays: The message rendering logic.
+
+Effort: 5 min
+Risk: Zero
+
+
+CHANGE 5: Chat input placeholder -- guide the user
+---------------------------------------------------
+
+File: src/main/resources/static/index.html
+
+What changes:
+  - Line ~1037: placeholder="Type your message..."
+  - NEW: placeholder="Describe a role or paste a job description..."
+
+What stays: The form, send button, all chat submission logic.
+
+Effort: 1 min
+Risk: Zero
+
+
+CHANGE 6: Permission prompts -- simplify the language
+-----------------------------------------------------
+
+File: src/main/resources/static/index.html (JavaScript section)
+
+What changes:
+  - Current permission cards show technical details (type, patterns).
+    Change rendering to show human-readable messages, e.g.:
+    "The assistant needs to browse the web to search for candidates."
+  - Button labels:
+    "Allow once" -> "Allow"
+    "Allow always" -> "Always allow"
+    "Reject" -> "Deny"
+
+What stays: Polling mechanism, permission reply API calls, backend logic.
+
+Effort: 15 min
+Risk: Low
+
+
+CHANGE 7: Hide panels via buttons (no HTML removal)
+----------------------------------------------------
+
+File: src/main/resources/static/index.html
+
+What changes:
+  - Skills pane, Skill modal, MCP pane HTML blocks stay in the file
+    but become unreachable because their toggle buttons are hidden
+    (done in Change 3).
+  - The associated CSS and JavaScript become dead code but are harmless.
+  - This is safer than removing HTML blocks -- less risk of breaking
+    something, and the features can be restored later if needed.
+
+What stays: All HTML, CSS, and JS for these panels. Just unreachable.
+
+Effort: 0 min (already handled by Change 3)
+Risk: Zero
+
+
+CHANGE 8: Agent system prompt -- make it HR-focused
+----------------------------------------------------
+
+Files affected:
+  - mounts/user1-config/opencode.json
+  - mounts/user2-config/opencode.json
+  - mounts/atalya-config/opencode.json
+  - Java source: UserWorkspaceService.java or wherever the default
+    agent prompt is generated for new workspaces
+
+What changes:
+  - Current agent prompt:
+    "You are the dedicated Base66 agent for user {username}.
+     Use all built-in tools when needed..."
+
+  - New agent prompt:
+    "You are Keren-HR, an HR recruiting assistant for {username}.
+     Your job is to help the user find and evaluate candidates
+     on LinkedIn for their open roles.
+
+     When the user describes a role or pastes a job description:
+     1. Extract the key requirements (must-haves, nice-to-haves,
+        location, seniority level)
+     2. Use the LinkedIn skill to search for and evaluate candidates
+     3. Present each candidate using the structured format from
+        the LinkedIn skill (Name, Title, Verdict, HR Logic,
+        Verified Skills, Red Flags)
+     4. Be ready to refine the search based on feedback
+
+     Always use the LinkedIn skill's protocols for stealth browsing
+     and structured candidate evaluation. Present results clearly.
+     Use both global and project skills when relevant.
+     Use both global and project MCP integrations when relevant."
+
+What stays: Workspace provisioning infrastructure, agent creation
+mechanism, the LinkedIn skill itself, all permission configs.
+
+Effort: 20 min
+Risk: Low
+
+
+==========================================================================
+SUMMARY TABLE
+==========================================================================
+
+ #  | What                        | Effort  | Risk
+----+-----------------------------+---------+------
+ 1  | Rename base66 -> keren-hr   | 20 min  | Low
+ 2  | Login subtitle              |  2 min  | Zero
+ 3  | Hide Skills + MCP buttons   |  5 min  | Zero
+ 4  | Welcome message             |  5 min  | Zero
+ 5  | Input placeholder           |  1 min  | Zero
+ 6  | Permission prompt text      | 15 min  | Low
+ 7  | Hide panels (via #3)        |  0 min  | Zero
+ 8  | Agent system prompt         | 20 min  | Low
+----+-----------------------------+---------+------
+    | TOTAL                       | ~68 min |
+
+==========================================================================
+WHAT WE ARE NOT DOING (intentionally)
+==========================================================================
+
+- No new screens or layouts
+- No candidate cards or structured rendering (free text from agent is fine)
+- No database or candidate persistence
+- No search history feature
+- No changes to backend Java API endpoints (Skills, MCP, Sessions APIs
+  stay -- they're just not exposed in the UI)
+- No removal of existing API endpoints
+- No Java package renaming (too risky for zero user-facing value)
+- No test creation (no tests exist currently)
+
+
+==========================================================================
+WHAT TO TEST AFTER
+==========================================================================
+
+1. Login and see the HR-focused welcome message
+2. Verify header shows "keren-hr", no Skills/MCP buttons visible
+3. Type "I need a senior Java developer with 5 years experience in
+   fintech, based in Tel Aviv"
+4. The agent should activate the LinkedIn skill, browse LinkedIn,
+   and return structured candidate analysis as free text
+5. Permission prompts should appear in readable language
+6. Give it to Atalya and watch her use it without explanation
+
+
+==========================================================================
+FUTURE (V1.1+)
+==========================================================================
+
+- Candidate cards UI (parse agent output into structured cards)
+- Save candidates to shortlist
+- Search history on main screen
+- Export to CSV/PDF
+- Email outreach templates (bring Gmail skill back)
+- Multiple job openings / pipeline view
+- Team collaboration features
+- Proper product name and branding
