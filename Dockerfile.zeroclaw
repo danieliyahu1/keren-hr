@@ -1,0 +1,3 @@
+FROM ghcr.io/zeroclaw-labs/zeroclaw:latest
+
+COPY zeroclaw-config/config.toml /zeroclaw-data/.zeroclaw/config.toml
