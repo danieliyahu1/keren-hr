@@ -38,3 +38,4 @@ build/
 ### Local env ###
 .env
 .opencode/
+.playwright-mcp/

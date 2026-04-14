@@ -16,16 +16,13 @@ public class AuthService {
 
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
-    private final UserWorkspaceService userWorkspaceService;
 
     public AuthService(
         AuthenticationManager authenticationManager,
-        JwtService jwtService,
-        UserWorkspaceService userWorkspaceService
+        JwtService jwtService
     ) {
         this.authenticationManager = authenticationManager;
         this.jwtService = jwtService;
-        this.userWorkspaceService = userWorkspaceService;
     }
 
     public LoginResponse login(LoginRequest request) {
@@ -37,10 +34,9 @@ public class AuthService {
 
             UserDetails userDetails = (UserDetails) authentication.getPrincipal();
             String token = jwtService.generateToken(userDetails);
-            String agentName = userWorkspaceService.getRequiredAgentName(userDetails.getUsername());
 
             log.info("Login successful for username='{}'", userDetails.getUsername());
-            return new LoginResponse(userDetails.getUsername(), token, "Bearer", agentName);
+            return new LoginResponse(userDetails.getUsername(), token, "Bearer");
         } catch (Exception ex) {
             log.warn("Login failed for username='{}': {}", request.username(), ex.getMessage());
             throw ex;

@@ -5,38 +5,19 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-import org.springframework.web.reactive.function.client.WebClientRequestException;
-import org.springframework.web.reactive.function.client.WebClientResponseException;
+import java.io.IOException;
 
 @Slf4j
 @RestControllerAdvice
 public class ApiExceptionHandler {
 
-    @ExceptionHandler(WebClientResponseException.class)
-    public ProblemDetail handleWebClientResponseException(WebClientResponseException ex) {
-        log.error(
-            "OpenCode endpoint returned error status={} uri={}",
-            ex.getStatusCode().value(),
-            ex.getRequest() == null ? "unknown" : ex.getRequest().getURI(),
-            ex
-        );
-
-        ProblemDetail detail = ProblemDetail.forStatus(HttpStatus.BAD_GATEWAY);
-        detail.setTitle("OpenCode request failed");
-        detail.setDetail("OpenCode returned status " + ex.getStatusCode().value()
-            + ". Check OpenCode logs and configuration.");
-        return detail;
-    }
-
-    @ExceptionHandler(WebClientRequestException.class)
-    public ProblemDetail handleWebClientRequestException(WebClientRequestException ex) {
-        String target = ex.getUri() == null ? "configured OpenCode endpoint" : ex.getUri().toString();
-        log.error("OpenCode endpoint unreachable: {}", target, ex);
+    @ExceptionHandler(IOException.class)
+    public ProblemDetail handleIOException(IOException ex) {
+        log.error("ZeroClaw connection error: {}", ex.getMessage(), ex);
 
         ProblemDetail detail = ProblemDetail.forStatus(HttpStatus.SERVICE_UNAVAILABLE);
-        detail.setTitle("OpenCode unavailable");
-        detail.setDetail("Unable to reach OpenCode at " + target
-            + ". Make sure OpenCode is running and OPENCODE_BASE_URL is correct.");
+        detail.setTitle("ZeroClaw unavailable");
+        detail.setDetail("Unable to communicate with ZeroClaw. Make sure ZeroClaw is running and ZEROCLAW_WS_URL is correct.");
         return detail;
     }
 
