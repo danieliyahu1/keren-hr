@@ -24,7 +24,7 @@ public class InMemoryAuthUserDetailsService implements UserDetailsService {
             UserDetails userDetails = User
                 .withUsername(configuredUser.getUsername())
                 .password(passwordEncoder.encode(configuredUser.getPassword()))
-                .roles(configuredUser.getRoles().toArray(new String[0]))
+                .authorities("USER")
                 .build();
 
             UserDetails previous = usersByUsername.putIfAbsent(userDetails.getUsername(), userDetails);

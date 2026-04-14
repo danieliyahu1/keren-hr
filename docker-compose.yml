@@ -4,10 +4,11 @@ services:
     env_file:
       - .env
     environment:
-      - ZEROCLAW_PROVIDER=opencode
-      - ZEROCLAW_API_KEY=${OPENCODE_API_KEY}
+      - ZEROCLAW_PROVIDER=${ZEROCLAW_PROVIDER}
+      - ZEROCLAW_API_KEY=${ZEROCLAW_API_KEY}
+      - ZEROCLAW_MODEL=${ZEROCLAW_MODEL}
     volumes:
-      - ${ZEROCLAW_MOUNT_PATH}:/zeroclaw-data/.zeroclaw
+      - ./zeroclaw-config/config.toml:/zeroclaw-data/.zeroclaw/config.toml:ro
     networks:
       - kerenhr-net
 

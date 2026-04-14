@@ -1,0 +1,30 @@
+[gateway]
+host = "0.0.0.0"
+port = 42617
+require_pairing = false
+allow_public_bind = true
+
+[autonomy]
+level = "full"
+allowed_commands = []
+forbidden_paths = [
+  "/etc",
+  "/root",
+  "/home",
+  "/usr",
+  "/bin",
+  "/sbin",
+  "/lib",
+  "/opt",
+  "/boot",
+  "/dev",
+  "/proc",
+  "/sys",
+  "/var",
+  "/tmp",
+  "~/.ssh",
+  "~/.gnupg",
+  "~/.aws",
+  "~/.config",
+  "/zeroclaw-data/.zeroclaw"
+]

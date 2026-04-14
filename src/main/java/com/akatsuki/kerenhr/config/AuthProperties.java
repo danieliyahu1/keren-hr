@@ -3,7 +3,6 @@ package com.akatsuki.kerenhr.config;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.Size;
 import java.util.ArrayList;
 import java.util.List;
@@ -56,9 +55,6 @@ public class AuthProperties {
         @NotBlank(message = "password is required")
         private String password;
 
-        @NotEmpty(message = "At least one role is required")
-        private List<@NotBlank String> roles = new ArrayList<>();
-
         public String getUsername() {
             return username;
         }
@@ -73,14 +69,6 @@ public class AuthProperties {
 
         public void setPassword(String password) {
             this.password = password;
-        }
-
-        public List<String> getRoles() {
-            return roles;
-        }
-
-        public void setRoles(List<String> roles) {
-            this.roles = roles;
         }
     }
 }
