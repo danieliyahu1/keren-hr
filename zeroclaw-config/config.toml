@@ -28,3 +28,12 @@ forbidden_paths = [
   "~/.config",
   "/zeroclaw-data/.zeroclaw"
 ]
+
+[mcp]
+enabled = true
+deferred_loading = true
+
+[[mcp.servers]]
+name = "playwright"
+command = "npx"
+args = ["-y", "@playwright/mcp@latest"]
