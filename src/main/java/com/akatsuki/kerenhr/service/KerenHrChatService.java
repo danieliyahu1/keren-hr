@@ -26,14 +26,14 @@ public class KerenHrChatService {
         }
 
         String safeMessage = Objects.requireNonNull(message, "message is required").trim();
-        log.info("Sending chat message to ZeroClaw, length={}", safeMessage.length());
-        log.debug("User -> ZeroClaw: {}", previewForLog(safeMessage));
+        log.info("Sending chat message, length={}", safeMessage.length());
+        log.debug("User -> model: {}", previewForLog(safeMessage));
         String response = chatClient.prompt()
             .user(safeMessage)
             .call()
             .content();
-        log.info("Received chat response from ZeroClaw, length={}", response == null ? 0 : response.length());
-        log.debug("ZeroClaw -> User: {}", previewForLog(response));
+        log.info("Received chat response, length={}", response == null ? 0 : response.length());
+        log.debug("Model -> user: {}", previewForLog(response));
         return response;
     }
 

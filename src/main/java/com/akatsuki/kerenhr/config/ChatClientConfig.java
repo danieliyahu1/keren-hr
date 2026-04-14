@@ -1,8 +1,8 @@
 package com.akatsuki.kerenhr.config;
 
-import com.akatsuki.kerenhr.zeroclaw.ZeroClawChatModel;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -13,8 +13,8 @@ import java.util.Objects;
 public class ChatClientConfig {
 
     @Bean
-    public ChatClient chatClient(ZeroClawChatModel zeroClawChatModel) {
-        log.debug("Creating ChatClient bean backed by ZeroClawChatModel");
-        return ChatClient.builder(Objects.requireNonNull(zeroClawChatModel, "zeroClawChatModel is required")).build();
+    public ChatClient chatClient(ChatModel chatModel) {
+        log.debug("Creating ChatClient bean with chatModel={}", chatModel.getClass().getSimpleName());
+        return ChatClient.builder(Objects.requireNonNull(chatModel, "chatModel is required")).build();
     }
 }
