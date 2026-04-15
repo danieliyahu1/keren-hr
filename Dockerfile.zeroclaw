@@ -24,10 +24,13 @@ RUN mkdir -p /zeroclaw-data/workspace /zeroclaw-data/.zeroclaw \
              /zeroclaw-data/.browser-data && \
     chown -R 65534:65534 /zeroclaw-data
 
+# Copy entrypoint script
+COPY --chown=65534:65534 docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
 # Run as nobody — same as the official zeroclaw image
 USER 65534
 
 EXPOSE 42617
 
-ENTRYPOINT ["zeroclaw"]
-CMD ["gateway"]
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]

@@ -10,7 +10,7 @@ services:
       - ZEROCLAW_API_KEY=${ZEROCLAW_API_KEY}
       - ZEROCLAW_MODEL=${ZEROCLAW_MODEL}
     volumes:
-      - ${ZEROCLAW_CONFIG_PATH}:/zeroclaw-data/.zeroclaw:ro
+      - ${ZEROCLAW_CONFIG_PATH}:/zeroclaw-data
     networks:
       - kerenhr-net
 

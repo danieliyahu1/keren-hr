@@ -47,18 +47,20 @@ import java.util.concurrent.atomic.AtomicReference;
 @Component
 public class ZeroClawChatModel implements ChatModel {
 
-    private static final int TIMEOUT_SECONDS = 120;
-
     private final String wsUrl;
+    private final int timeoutSeconds;
     private final HttpClient httpClient;
     private final ObjectMapper objectMapper;
     private final ConcurrentHashMap<String, String> userSessions = new ConcurrentHashMap<>();
 
-    public ZeroClawChatModel(@Value("${app.zeroclaw.ws-url}") String wsUrl) {
+    public ZeroClawChatModel(
+            @Value("${app.zeroclaw.ws-url}") String wsUrl,
+            @Value("${app.zeroclaw.timeout-seconds:600}") int timeoutSeconds) {
         this.wsUrl = wsUrl;
+        this.timeoutSeconds = timeoutSeconds;
         this.httpClient = HttpClient.newHttpClient();
         this.objectMapper = new ObjectMapper();
-        log.info("ZeroClawChatModel initialized with wsUrl={}", wsUrl);
+        log.info("ZeroClawChatModel initialized with wsUrl={}, timeoutSeconds={}", wsUrl, timeoutSeconds);
     }
 
     @Override
@@ -143,14 +145,14 @@ public class ZeroClawChatModel implements ChatModel {
         try {
             ws = httpClient.newWebSocketBuilder()
                     .buildAsync(uri, listener)
-                    .get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
+                    .get(timeoutSeconds, TimeUnit.SECONDS);
         } catch (Exception e) {
             throw new RuntimeException("Failed to connect to ZeroClaw WebSocket at " + uri, e);
         }
 
         // Wait for session_start before sending the message
         try {
-            if (!sessionStartLatch.await(TIMEOUT_SECONDS, TimeUnit.SECONDS)) {
+            if (!sessionStartLatch.await(timeoutSeconds, TimeUnit.SECONDS)) {
                 ws.abort();
                 throw new RuntimeException("Timed out waiting for ZeroClaw session_start");
             }
@@ -173,7 +175,7 @@ public class ZeroClawChatModel implements ChatModel {
 
         // Await full response
         try {
-            String result = responseFuture.get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
+            String result = responseFuture.get(timeoutSeconds, TimeUnit.SECONDS);
             ws.sendClose(WebSocket.NORMAL_CLOSURE, "done");
             return result;
         } catch (Exception e) {
@@ -204,7 +206,8 @@ public class ZeroClawChatModel implements ChatModel {
         }
 
         String type = textOf(node, "type");
-        log.trace("ZeroClaw frame type='{}' for user='{}'", type, username);
+        log.debug("ZeroClaw raw frame for user='{}': {}",
+                username, rawFrame.length() > 500 ? rawFrame.substring(0, 500) + "...(truncated)" : rawFrame);
 
         switch (type) {
             case "session_start" -> {
@@ -227,8 +230,12 @@ public class ZeroClawChatModel implements ChatModel {
             }
             case "done" -> {
                 String fullResponse = textOf(node, "full_response");
-                if (fullResponse == null || fullResponse.isBlank()) {
+                if (fullResponse == null) {
                     fullResponse = chunkBuffer.toString();
+                }
+                if (fullResponse.isBlank()) {
+                    log.warn("ZeroClaw returned empty response for user='{}' — agent could not complete the task", username);
+                    fullResponse = "I was unable to complete this task. Please try breaking it into smaller steps or provide more details.";
                 }
                 log.debug("ZeroClaw done frame, responseLength={}", fullResponse.length());
                 responseFuture.complete(fullResponse);
