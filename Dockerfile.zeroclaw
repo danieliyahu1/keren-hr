@@ -24,10 +24,6 @@ RUN mkdir -p /zeroclaw-data/workspace /zeroclaw-data/.zeroclaw \
              /zeroclaw-data/.browser-data && \
     chown -R 65534:65534 /zeroclaw-data
 
-# Bake in config
-COPY zeroclaw-config/config.toml /zeroclaw-data/.zeroclaw/config.toml
-RUN chown 65534:65534 /zeroclaw-data/.zeroclaw/config.toml
-
 # Run as nobody — same as the official zeroclaw image
 USER 65534
 
