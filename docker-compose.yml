@@ -1,6 +1,8 @@
 services:
   zeroclaw:
-    image: ghcr.io/zeroclaw-labs/zeroclaw:latest
+    build:
+      context: .
+      dockerfile: Dockerfile.zeroclaw
     env_file:
       - .env
     environment:

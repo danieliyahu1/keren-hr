@@ -1,3 +1,37 @@
-FROM ghcr.io/zeroclaw-labs/zeroclaw:latest
+# ==============================================================================
+# ZeroClaw + Playwright MCP
+#
+# Mirrors the main-branch pattern:
+#   Main:   eclipse-temurin:21-jre-alpine  +  apk add nodejs npm
+#   Here:   zeroclaw:debian                +  apt-get install nodejs npm chromium
+#
+# Uses --executable-path /usr/bin/chromium in config.toml so Playwright MCP
+# uses the system Chromium directly — no version mismatch, no runtime download.
+# ==============================================================================
+FROM ghcr.io/zeroclaw-labs/zeroclaw:debian
 
+# The :debian image defaults to UID 65534 (nobody). Switch to root for installs.
+USER root
+
+# Install Node.js + npm (for npx @playwright/mcp) and Chromium.
+# Debian's chromium package pulls in all required system libraries automatically.
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends nodejs npm chromium && \
+    rm -rf /var/lib/apt/lists/*
+
+# Create zeroclaw data dirs and set ownership to nobody (65534)
+RUN mkdir -p /zeroclaw-data/workspace /zeroclaw-data/.zeroclaw \
+             /zeroclaw-data/.browser-data && \
+    chown -R 65534:65534 /zeroclaw-data
+
+# Bake in config
 COPY zeroclaw-config/config.toml /zeroclaw-data/.zeroclaw/config.toml
+RUN chown 65534:65534 /zeroclaw-data/.zeroclaw/config.toml
+
+# Run as nobody — same as the official zeroclaw image
+USER 65534
+
+EXPOSE 42617
+
+ENTRYPOINT ["zeroclaw"]
+CMD ["gateway"]

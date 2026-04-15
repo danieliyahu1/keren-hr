@@ -29,11 +29,14 @@ forbidden_paths = [
   "/zeroclaw-data/.zeroclaw"
 ]
 
+[agent]
+max_tool_iterations = 50
+
 [mcp]
 enabled = true
-deferred_loading = true
+deferred_loading = false
 
 [[mcp.servers]]
 name = "playwright"
 command = "npx"
-args = ["-y", "@playwright/mcp@latest"]
+args = ["-y", "@playwright/mcp@latest", "--executable-path", "/usr/bin/chromium", "--user-data-dir", "/zeroclaw-data/.browser-data"]
