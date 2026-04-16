@@ -1,12 +1,9 @@
 # ==============================================================================
 # ZeroClaw + Playwright MCP
 #
-# Mirrors the main-branch pattern:
-#   Main:   eclipse-temurin:21-jre-alpine  +  apk add nodejs npm
-#   Here:   zeroclaw:debian                +  apt-get install nodejs npm chromium
-#
-# Uses --executable-path /usr/bin/chromium in config.toml so Playwright MCP
-# uses the system Chromium directly — no version mismatch, no runtime download.
+# Installs Node.js + npm (for npx @playwright/mcp) and Chromium.
+# Chromium is pre-installed so the agent always has a browser available.
+# config.toml points Playwright MCP at /usr/bin/chromium via --executable-path.
 # ==============================================================================
 FROM ghcr.io/zeroclaw-labs/zeroclaw:debian
 
@@ -14,15 +11,27 @@ FROM ghcr.io/zeroclaw-labs/zeroclaw:debian
 USER root
 
 # Install Node.js + npm (for npx @playwright/mcp) and Chromium.
-# Debian's chromium package pulls in all required system libraries automatically.
 RUN apt-get update && \
     apt-get install -y --no-install-recommends nodejs npm chromium && \
     rm -rf /var/lib/apt/lists/*
 
+# Install Playwright's own Firefox binary into /ms-playwright (outside the bind mount at /zeroclaw-data).
+ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
+RUN npx -y playwright install --with-deps firefox
+
 # Create zeroclaw data dirs and set ownership to nobody (65534)
-RUN mkdir -p /zeroclaw-data/workspace /zeroclaw-data/.zeroclaw \
-             /zeroclaw-data/.browser-data && \
+RUN mkdir -p /zeroclaw-data/workspace /zeroclaw-data/.zeroclaw && \
     chown -R 65534:65534 /zeroclaw-data
+
+# Browser data dir outside the bind mount and outside forbidden_paths
+RUN mkdir -p /browser-data && chown -R 65534:65534 /browser-data
+
+# Install the email verification code script and its dependencies
+RUN mkdir -p /scripts && \
+    npm install --prefix /scripts imap-simple && \
+    rm -rf /scripts/node_modules/.cache
+COPY --chown=65534:65534 fetch-verification-code.js /scripts/fetch-verification-code.js
+RUN chown -R 65534:65534 /scripts
 
 # Copy entrypoint script
 COPY --chown=65534:65534 docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
