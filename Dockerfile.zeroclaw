@@ -30,11 +30,11 @@ RUN mkdir -p /browser-data && chown -R 65534:65534 /browser-data
 RUN mkdir -p /scripts && \
     npm install --prefix /scripts imap-simple && \
     rm -rf /scripts/node_modules/.cache
-COPY --chown=65534:65534 fetch-verification-code.js /scripts/fetch-verification-code.js
+COPY --chown=65534:65534 zeroclaw/fetch-verification-code.js /scripts/fetch-verification-code.js
 RUN chown -R 65534:65534 /scripts
 
 # Copy entrypoint script
-COPY --chown=65534:65534 docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+COPY --chown=65534:65534 zeroclaw/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
 # Run as nobody — same as the official zeroclaw image
