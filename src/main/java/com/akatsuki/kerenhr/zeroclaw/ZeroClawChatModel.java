@@ -289,11 +289,10 @@ public class ZeroClawChatModel implements ChatModel {
 
                 } else if (hadToolCallsThisTurn.get() && currentTurn >= MAX_TURNS) {
                     // Safety ceiling reached — stop and return what we have.
+                    // fullResponse is guaranteed non-null here (assigned from full_response field
+                    // or chunkBuffer.toString() above), so only a blank check is needed.
                     log.warn("ZeroClaw reached MAX_TURNS ({}) for user='{}' — stopping. " +
                             "The agent may not have fully completed the task.", MAX_TURNS, username);
-                    if (fullResponse == null || fullResponse.isBlank()) {
-                        fullResponse = chunkBuffer.toString();
-                    }
                     if (fullResponse.isBlank()) {
                         fullResponse = "The agent reached the maximum number of steps (" + MAX_TURNS +
                                 ") without completing the task. Please try breaking the request into smaller parts.";
