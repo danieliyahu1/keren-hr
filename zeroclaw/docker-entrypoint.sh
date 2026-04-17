@@ -32,4 +32,15 @@ if [ -f "${SECRET_BUNDLE}" ]; then
     echo "[entrypoint] Config bundle extracted successfully"
 fi
 
+# ==============================================================================
+# noVNC: start a virtual display so the agent's browser is visible via browser
+# at http://localhost:6080/vnc.html  (TEMPORARY — remove after browser testing)
+# ==============================================================================
+export DISPLAY=:99
+Xvfb :99 -screen 0 1280x900x24 -ac &
+sleep 1
+x11vnc -display :99 -nopw -forever -shared -rfbport 5900 &
+websockify --web /usr/share/novnc 6080 localhost:5900 &
+# ==============================================================================
+
 exec zeroclaw gateway

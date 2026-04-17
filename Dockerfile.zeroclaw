@@ -1,23 +1,25 @@
 # ==============================================================================
 # ZeroClaw + Playwright MCP
 #
-# Installs Node.js + npm (for npx @playwright/mcp) and Chromium.
-# Chromium is pre-installed so the agent always has a browser available.
-# config.toml points Playwright MCP at /usr/bin/chromium via --executable-path.
+# Installs Node.js + npm (for npx @playwright/mcp).
+# Playwright manages its own Chromium and Firefox binaries at /ms-playwright.
 # ==============================================================================
 FROM ghcr.io/zeroclaw-labs/zeroclaw:debian
 
 # The :debian image defaults to UID 65534 (nobody). Switch to root for installs.
 USER root
 
-# Install Node.js + npm (for npx @playwright/mcp) and Chromium.
+# Install Node.js + npm (for npx @playwright/mcp) and noVNC stack.
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends nodejs npm chromium && \
+    apt-get install -y --no-install-recommends \
+        nodejs npm \
+        xvfb x11vnc websockify novnc \
+        xauth dbus-x11 && \
     rm -rf /var/lib/apt/lists/*
 
-# Install Playwright's own Firefox binary into /ms-playwright (outside the bind mount at /zeroclaw-data).
+# Install Playwright's managed Firefox and Chromium binaries into /ms-playwright (outside the bind mount at /zeroclaw-data).
 ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
-RUN npx -y playwright install --with-deps firefox
+RUN npx -y playwright install --with-deps firefox chromium
 
 # Create zeroclaw data dirs and set ownership to nobody (65534)
 RUN mkdir -p /zeroclaw-data/workspace /zeroclaw-data/.zeroclaw && \

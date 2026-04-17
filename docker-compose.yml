@@ -9,6 +9,8 @@ services:
       - ZEROCLAW_PROVIDER=${ZEROCLAW_PROVIDER}
       - ZEROCLAW_API_KEY=${ZEROCLAW_API_KEY}
       - ZEROCLAW_MODEL=${ZEROCLAW_MODEL}
+    ports:
+      - "6080:6080"   # noVNC — TEMPORARY, remove after browser testing
     volumes:
       - ${ZEROCLAW_CONFIG_PATH}:/zeroclaw-data
     networks:
