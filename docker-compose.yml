@@ -16,14 +16,30 @@ services:
     networks:
       - kerenhr-net
 
+  opencode:
+    build:
+      context: .
+      dockerfile: Dockerfile.opencode
+    env_file:
+      - .env
+    environment:
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+    networks:
+      - kerenhr-net
+
   kerenhr:
     build: .
     ports:
       - "8080:8080"
     env_file:
       - .env
+    environment:
+      - OPENCODE_BASE_URL=http://opencode:4096
+      - ZEROCLAW_WS_URL=ws://zeroclaw:42617/ws/chat
     depends_on:
       - zeroclaw
+      - opencode
     networks:
       - kerenhr-net
 

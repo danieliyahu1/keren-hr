@@ -14,7 +14,7 @@ public class ChatClientConfig {
 
     @Bean
     public ChatClient chatClient(ChatModel chatModel) {
-        log.debug("Creating ChatClient bean with chatModel={}", chatModel.getClass().getSimpleName());
+        log.info("ChatClient wired with active ChatModel: {}", chatModel.getClass().getSimpleName());
         return ChatClient.builder(Objects.requireNonNull(chatModel, "chatModel is required")).build();
     }
 }

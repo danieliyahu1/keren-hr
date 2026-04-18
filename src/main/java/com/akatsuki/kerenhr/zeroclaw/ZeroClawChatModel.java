@@ -11,7 +11,6 @@ import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 
 import java.net.URI;
@@ -45,7 +44,6 @@ import java.util.concurrent.atomic.AtomicReference;
  * </ol>
  */
 @Slf4j
-@Primary
 @Component
 public class ZeroClawChatModel implements ChatModel {
 
@@ -65,7 +63,7 @@ public class ZeroClawChatModel implements ChatModel {
         this.timeoutSeconds = timeoutSeconds;
         this.httpClient = HttpClient.newHttpClient();
         this.objectMapper = new ObjectMapper();
-        log.info("ZeroClawChatModel initialized with wsUrl={}, timeoutSeconds={}", wsUrl, timeoutSeconds);
+        log.debug("ZeroClawChatModel initialized with wsUrl={}, timeoutSeconds={}", wsUrl, timeoutSeconds);
     }
 
     @Override

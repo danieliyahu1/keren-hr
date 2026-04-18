@@ -1,0 +1,21 @@
+# ==============================================================================
+# OpenCode — headless server
+#
+# Runs `opencode serve` on port 4096.
+# Stateless: receives prompts over HTTP from the kerenhr service and responds.
+# ==============================================================================
+FROM node:lts-slim
+
+# Install opencode globally
+RUN npm install -g opencode-ai
+
+# Create a non-root user
+RUN groupadd -r opencode && useradd -r -g opencode opencode \
+    && mkdir -p /home/opencode && chown opencode:opencode /home/opencode
+
+USER opencode
+
+EXPOSE 4096
+
+# --hostname 0.0.0.0 makes the server reachable from other containers
+CMD ["opencode", "serve", "--port", "4096", "--hostname", "0.0.0.0"]
