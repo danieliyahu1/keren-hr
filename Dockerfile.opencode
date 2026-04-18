@@ -3,19 +3,46 @@
 #
 # Runs `opencode serve` on port 4096.
 # Stateless: receives prompts over HTTP from the kerenhr service and responds.
+#
+# noVNC (TEMPORARY): a virtual display is exposed at http://localhost:6081/vnc.html
+# so the agent's browser session can be observed during development.
 # ==============================================================================
 FROM node:lts-slim
+
+# Install system dependencies for Playwright browsers and noVNC display stack
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates \
+    xvfb x11vnc websockify novnc \
+    xauth dbus-x11 \
+    && rm -rf /var/lib/apt/lists/*
 
 # Install opencode globally
 RUN npm install -g opencode-ai
 
+# Pre-install Playwright MCP and bake Chromium into the image
+# PLAYWRIGHT_BROWSERS_PATH keeps browsers outside the home dir so they
+# survive user switching and are not accidentally bind-mounted over.
+ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
+ENV DISPLAY=:99
+RUN npx -y @playwright/mcp@latest --version \
+    && npx -y playwright install --with-deps chromium
+
 # Create a non-root user
 RUN groupadd -r opencode && useradd -r -g opencode opencode \
-    && mkdir -p /home/opencode && chown opencode:opencode /home/opencode
+    && mkdir -p /home/opencode/.config/opencode \
+    && chown -R opencode:opencode /home/opencode \
+    && chown -R opencode:opencode /ms-playwright
+
+# Bake the opencode config with Playwright MCP enabled
+COPY opencode-container.json /home/opencode/.config/opencode/opencode.json
+RUN chown opencode:opencode /home/opencode/.config/opencode/opencode.json
+
+# Copy entrypoint script
+COPY opencode/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
 USER opencode
 
-EXPOSE 4096
+EXPOSE 4096 6081
 
-# --hostname 0.0.0.0 makes the server reachable from other containers
-CMD ["opencode", "serve", "--port", "4096", "--hostname", "0.0.0.0"]
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]

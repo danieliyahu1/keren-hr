@@ -22,9 +22,8 @@ services:
       dockerfile: Dockerfile.opencode
     env_file:
       - .env
-    environment:
-      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
+    ports:
+      - "6081:6081"   # noVNC — TEMPORARY, remove after browser testing
     networks:
       - kerenhr-net
 
