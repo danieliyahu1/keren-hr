@@ -41,4 +41,4 @@ EXPOSE 8080
 # Use tini as PID 1
 ENTRYPOINT ["tini", "--"]
 
-CMD ["java", "-jar", "app.jar"]
+CMD ["java", "-Xms256m", "-Xmx512m", "-jar", "app.jar"]

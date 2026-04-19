@@ -6,10 +6,11 @@
 # ==============================================================================
 FROM node:lts-slim
 
-# Install system dependencies for Playwright browsers
+# Install system dependencies for Playwright browsers and envsubst for runtime credential injection
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     xauth dbus-x11 \
+    gettext-base \
     && rm -rf /var/lib/apt/lists/*
 
 # Install opencode globally
@@ -33,6 +34,10 @@ RUN groupadd -r opencode && useradd -r -g opencode -d /home/opencode opencode \
 # Bake the opencode config with Playwright MCP enabled
 COPY opencode-container.json /home/opencode/.config/opencode/opencode.json
 RUN chown opencode:opencode /home/opencode/.config/opencode/opencode.json
+
+# Bake skills into the image (credentials are placeholders, injected at runtime via envsubst)
+COPY opencode/skills/ /home/opencode/.config/opencode/skills/
+RUN chown -R opencode:opencode /home/opencode/.config/opencode/skills/
 
 # Copy entrypoint script
 COPY opencode/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh

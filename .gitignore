@@ -37,5 +37,6 @@ build/
 
 ### Local env ###
 .env
+credentials.env
 .opencode/
 .playwright-mcp/
