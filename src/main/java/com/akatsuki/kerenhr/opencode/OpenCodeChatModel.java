@@ -23,17 +23,19 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Spring AI {@link ChatModel} backed by the OpenCode Gateway HTTP API.
  *
- * <p>Protocol:
+ * <p>Stateless: every {@link #call(Prompt)} creates a fresh OpenCode session, sends the
+ * prompt, reads the response, then deletes the session. No state is retained between calls.
+ *
+ * <p>Protocol per call:
  * <ol>
- *   <li>Create a session via {@code POST /session} (once per user; reused across calls).</li>
- *   <li>Send the prompt via {@code POST /session/{id}/message} (synchronous, returns full response).</li>
+ *   <li>Create a session via {@code POST /session}.</li>
+ *   <li>Send the prompt via {@code POST /session/{id}/message} (streaming NDJSON response).</li>
  *   <li>Filter response parts by {@code type == "text"} to exclude reasoning/thinking parts.</li>
- *   <li>On HTTP 404 from {@code /message}: evict the stale session and retry once.</li>
+ *   <li>Delete the session via {@code DELETE /session/{id}} (best-effort cleanup).</li>
  * </ol>
  */
 @Slf4j
@@ -45,9 +47,6 @@ public class OpenCodeChatModel implements ChatModel {
     private final int timeoutSeconds;
     private final HttpClient httpClient;
     private final ObjectMapper objectMapper;
-
-    /** Maps authenticated username → OpenCode session ID for conversation continuity. */
-    private final ConcurrentHashMap<String, String> userSessions = new ConcurrentHashMap<>();
 
     public OpenCodeChatModel(
             @Value("${app.opencode.base-url}") String baseUrl,
@@ -69,52 +68,23 @@ public class OpenCodeChatModel implements ChatModel {
     @Override
     public ChatResponse call(Prompt prompt) {
         String userText = prompt.getContents();
-        String username = resolveUsername();
-        String existingSessionId = userSessions.get(username);
+        log.debug("OpenCode call messageLength={}", userText == null ? 0 : userText.length());
 
-        log.debug("OpenCode call for user='{}', sessionId='{}', messageLength={}",
-                username, existingSessionId, userText == null ? 0 : userText.length());
-
-        String response = sendWithRetry(username, userText, existingSessionId);
-        return new ChatResponse(List.of(new Generation(new AssistantMessage(response))));
-    }
-
-    // -------------------------------------------------------------------------
-    // Retry wrapper
-    // -------------------------------------------------------------------------
-
-    private String sendWithRetry(String username, String userText, String sessionId) {
+        String sessionId = createSession();
         try {
-            return doSend(username, userText, sessionId);
-        } catch (SessionNotFoundException e) {
-            log.warn("OpenCode session not found for user='{}', retrying with fresh session", username);
-            userSessions.remove(username);
-            return doSend(username, userText, null);
+            String response = sendMessage(sessionId, userText);
+            return new ChatResponse(List.of(new Generation(new AssistantMessage(response))));
+        } finally {
+            deleteSession(sessionId);
         }
     }
 
-    private String doSend(String username, String userText, String existingSessionId) {
-        String sessionId = ensureSession(username, existingSessionId);
-        userSessions.put(username, sessionId);
-        log.info("OpenCode session established for user='{}', sessionId='{}'", username, sessionId);
-
-        return sendMessage(username, sessionId, userText);
-    }
-
     // -------------------------------------------------------------------------
-    // Session management
+    // Session lifecycle
     // -------------------------------------------------------------------------
 
-    private String ensureSession(String username, String existingSessionId) {
-        if (existingSessionId != null && !existingSessionId.isBlank()) {
-            log.debug("OpenCode reusing session '{}' for user='{}'", existingSessionId, username);
-            return existingSessionId;
-        }
-        return createSession(username);
-    }
-
-    private String createSession(String username) {
-        log.info("OpenCode creating new session for user='{}'", username);
+    private String createSession() {
+        log.info("OpenCode creating new session");
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(baseUrl + "/session"))
                 .header("Content-Type", "application/json")
@@ -136,7 +106,7 @@ public class OpenCodeChatModel implements ChatModel {
                 throw new RuntimeException(
                         "OpenCode session creation response missing 'id' field: " + response.body());
             }
-            log.info("OpenCode new session created for user='{}', sessionId='{}'", username, sessionId);
+            log.info("OpenCode session created sessionId='{}'", sessionId);
             return sessionId;
         } catch (JsonProcessingException e) {
             throw new RuntimeException(
@@ -144,11 +114,29 @@ public class OpenCodeChatModel implements ChatModel {
         }
     }
 
+    private void deleteSession(String sessionId) {
+        try {
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(baseUrl + "/session/" + sessionId))
+                    .DELETE()
+                    .build();
+            HttpResponse<String> response = execute(request);
+            if (response.statusCode() < 200 || response.statusCode() >= 300) {
+                log.warn("OpenCode session delete returned HTTP {} for sessionId='{}'",
+                        response.statusCode(), sessionId);
+            } else {
+                log.info("OpenCode session deleted sessionId='{}'", sessionId);
+            }
+        } catch (Exception e) {
+            log.warn("OpenCode session delete failed for sessionId='{}': {}", sessionId, e.getMessage());
+        }
+    }
+
     // -------------------------------------------------------------------------
     // Message sending via synchronous POST /session/{id}/message
     // -------------------------------------------------------------------------
 
-    private String sendMessage(String username, String sessionId, String userText) {
+    private String sendMessage(String sessionId, String userText) {
         String body = buildPromptBody(userText);
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(baseUrl + "/session/" + sessionId + "/message"))
@@ -157,8 +145,7 @@ public class OpenCodeChatModel implements ChatModel {
                 .timeout(java.time.Duration.ofSeconds(timeoutSeconds))
                 .build();
 
-        log.info("OpenCode sending message for user='{}', sessionId='{}', payloadLength={}",
-                username, sessionId, body.length());
+        log.info("OpenCode sending message sessionId='{}', payloadLength={}", sessionId, body.length());
 
         HttpResponse<java.io.InputStream> response;
         try {
@@ -169,10 +156,6 @@ public class OpenCodeChatModel implements ChatModel {
                     "Failed to connect to OpenCode gateway at " + baseUrl + ": " + e.getMessage(), e);
         }
 
-        if (response.statusCode() == 404) {
-            throw new SessionNotFoundException(
-                    "OpenCode session '" + sessionId + "' not found (HTTP 404)");
-        }
         if (response.statusCode() < 200 || response.statusCode() >= 300) {
             throw new RuntimeException(
                     "OpenCode message returned HTTP " + response.statusCode() +
@@ -180,7 +163,7 @@ public class OpenCodeChatModel implements ChatModel {
         }
 
         String text = readTextPartsFromStream(response.body(), sessionId);
-        log.info("OpenCode task completed for user='{}', responseLength={}", username, text.length());
+        log.info("OpenCode task completed sessionId='{}', responseLength={}", sessionId, text.length());
         return text;
     }
 
@@ -243,15 +226,6 @@ public class OpenCodeChatModel implements ChatModel {
         }
     }
 
-    private String resolveUsername() {
-        org.springframework.security.core.Authentication auth =
-                org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
-        if (auth != null && org.springframework.util.StringUtils.hasText(auth.getName())) {
-            return auth.getName();
-        }
-        throw new IllegalStateException("Authenticated username is required");
-    }
-
     private String buildPromptBody(String userText) {
         try {
             return objectMapper.writeValueAsString(
@@ -267,12 +241,5 @@ public class OpenCodeChatModel implements ChatModel {
     private static String textOf(JsonNode node, String field) {
         JsonNode child = node.get(field);
         return (child != null && !child.isNull()) ? child.asText() : null;
-    }
-
-    /** Thrown when OpenCode returns 404 for a session, triggering a retry with a fresh session. */
-    private static class SessionNotFoundException extends RuntimeException {
-        SessionNotFoundException(String message) {
-            super(message);
-        }
     }
 }
