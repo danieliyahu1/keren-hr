@@ -24,6 +24,8 @@ services:
       - .env
     ports:
       - "6081:6081"   # noVNC — TEMPORARY, remove after browser testing
+    volumes:
+      - ${OPENCODE_SKILLS_PATH}:/home/opencode/.config/opencode/skills:ro
     networks:
       - kerenhr-net
 

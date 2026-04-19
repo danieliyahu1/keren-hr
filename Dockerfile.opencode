@@ -28,8 +28,10 @@ RUN npx -y @playwright/mcp@latest --version \
     && npx -y playwright install --with-deps chromium
 
 # Create a non-root user
-RUN groupadd -r opencode && useradd -r -g opencode opencode \
+RUN groupadd -r opencode && useradd -r -g opencode -d /home/opencode opencode \
     && mkdir -p /home/opencode/.config/opencode \
+    && mkdir -p /home/opencode/.playwright-mcp \
+    && mkdir -p /home/opencode/.playwright-mcp-output \
     && chown -R opencode:opencode /home/opencode \
     && chown -R opencode:opencode /ms-playwright
 
@@ -40,6 +42,9 @@ RUN chown opencode:opencode /home/opencode/.config/opencode/opencode.json
 # Copy entrypoint script
 COPY opencode/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
+# TEMPORARY (dev/testing) — pre-create X11 socket dir so Xvfb works as non-root after restart
+RUN mkdir -p /tmp/.X11-unix && chmod 1777 /tmp/.X11-unix
 
 USER opencode
 
