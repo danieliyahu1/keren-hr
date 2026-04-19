@@ -3,16 +3,12 @@
 #
 # Runs `opencode serve` on port 4096.
 # Stateless: receives prompts over HTTP from the kerenhr service and responds.
-#
-# noVNC (TEMPORARY): a virtual display is exposed at http://localhost:6081/vnc.html
-# so the agent's browser session can be observed during development.
 # ==============================================================================
 FROM node:lts-slim
 
-# Install system dependencies for Playwright browsers and noVNC display stack
+# Install system dependencies for Playwright browsers
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
-    xvfb x11vnc websockify novnc \
     xauth dbus-x11 \
     && rm -rf /var/lib/apt/lists/*
 
@@ -23,7 +19,6 @@ RUN npm install -g opencode-ai
 # PLAYWRIGHT_BROWSERS_PATH keeps browsers outside the home dir so they
 # survive user switching and are not accidentally bind-mounted over.
 ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
-ENV DISPLAY=:99
 RUN npx -y @playwright/mcp@latest --version \
     && npx -y playwright install --with-deps chromium
 
@@ -43,11 +38,8 @@ RUN chown opencode:opencode /home/opencode/.config/opencode/opencode.json
 COPY opencode/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
-# TEMPORARY (dev/testing) — pre-create X11 socket dir so Xvfb works as non-root after restart
-RUN mkdir -p /tmp/.X11-unix && chmod 1777 /tmp/.X11-unix
-
 USER opencode
 
-EXPOSE 4096 6081
+EXPOSE 4096
 
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
