@@ -1,21 +1,4 @@
 services:
-  zeroclaw:
-    build:
-      context: .
-      dockerfile: Dockerfile.zeroclaw
-    env_file:
-      - .env
-    environment:
-      - ZEROCLAW_PROVIDER=${ZEROCLAW_PROVIDER}
-      - ZEROCLAW_API_KEY=${ZEROCLAW_API_KEY}
-      - ZEROCLAW_MODEL=${ZEROCLAW_MODEL}
-    ports:
-      - "6080:6080"   # noVNC — TEMPORARY, remove after browser testing
-    volumes:
-      - ${ZEROCLAW_CONFIG_PATH}:/zeroclaw-data
-    networks:
-      - kerenhr-net
-
   opencode:
     build:
       context: .
@@ -37,9 +20,7 @@ services:
       - .env
     environment:
       - OPENCODE_BASE_URL=http://opencode:4096
-      - ZEROCLAW_WS_URL=ws://zeroclaw:42617/ws/chat
     depends_on:
-      - zeroclaw
       - opencode
     networks:
       - kerenhr-net

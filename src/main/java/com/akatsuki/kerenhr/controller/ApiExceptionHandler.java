@@ -13,11 +13,11 @@ public class ApiExceptionHandler {
 
     @ExceptionHandler(IOException.class)
     public ProblemDetail handleIOException(IOException ex) {
-        log.error("ZeroClaw connection error: {}", ex.getMessage(), ex);
+        log.error("OpenCode connection error: {}", ex.getMessage(), ex);
 
         ProblemDetail detail = ProblemDetail.forStatus(HttpStatus.SERVICE_UNAVAILABLE);
-        detail.setTitle("ZeroClaw unavailable");
-        detail.setDetail("Unable to communicate with ZeroClaw. Make sure ZeroClaw is running and ZEROCLAW_WS_URL is correct.");
+        detail.setTitle("OpenCode unavailable");
+        detail.setDetail("Unable to communicate with OpenCode. Make sure OpenCode is running and OPENCODE_BASE_URL is correct.");
         return detail;
     }
 
