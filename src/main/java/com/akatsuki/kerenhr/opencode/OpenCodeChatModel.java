@@ -27,15 +27,20 @@ import java.util.Map;
 /**
  * Spring AI {@link ChatModel} backed by the OpenCode Gateway HTTP API.
  *
- * <p>Stateless: every {@link #call(Prompt)} creates a fresh OpenCode session, sends the
- * prompt, reads the response, then deletes the session. No state is retained between calls.
+ * <p>Supports two usage modes:
+ * <ul>
+ *   <li><b>Stateless</b> ({@link #call(Prompt)}): creates a fresh OpenCode session, sends the
+ *       prompt, reads the response, then deletes the session.</li>
+ *   <li><b>Stateful</b> ({@link #chat(String, String)}): sends a message to an existing
+ *       OpenCode session without creating or deleting it. The caller is responsible for
+ *       session lifecycle via {@link #createSession()} and {@link #deleteSession(String)}.</li>
+ * </ul>
  *
- * <p>Protocol per call:
+ * <p>Protocol per message:
  * <ol>
- *   <li>Create a session via {@code POST /session}.</li>
  *   <li>Send the prompt via {@code POST /session/{id}/message} (streaming NDJSON response).</li>
  *   <li>Filter response parts by {@code type == "text"} to exclude reasoning/thinking parts.</li>
- *   <li>Delete the session via {@code DELETE /session/{id}} (best-effort cleanup).</li>
+ *   <li>Stop accumulating on {@code type == "step-finish"}.</li>
  * </ol>
  */
 @Slf4j
@@ -57,7 +62,7 @@ public class OpenCodeChatModel implements ChatModel {
                 .connectTimeout(java.time.Duration.ofSeconds(timeoutSeconds))
                 .build();
         this.objectMapper = new ObjectMapper();
-        log.debug("OpenCodeChatModel initialized with baseUrl={}, timeoutSeconds={}", baseUrl, timeoutSeconds);
+        log.info("OpenCodeChatModel initialized baseUrl='{}' timeoutSeconds={}", baseUrl, timeoutSeconds);
     }
 
     @Override
@@ -68,23 +73,44 @@ public class OpenCodeChatModel implements ChatModel {
     @Override
     public ChatResponse call(Prompt prompt) {
         String userText = prompt.getContents();
-        log.debug("OpenCode call messageLength={}", userText == null ? 0 : userText.length());
+        log.info("OpenCode stateless call — creating fresh session, messageLength={}",
+                userText == null ? 0 : userText.length());
 
         String sessionId = createSession();
         try {
             String response = sendMessage(sessionId, userText);
+            log.info("OpenCode stateless call completed sessionId='{}' responseLength={}", sessionId, response.length());
             return new ChatResponse(List.of(new Generation(new AssistantMessage(response))));
         } finally {
             deleteSession(sessionId);
         }
     }
 
+    /**
+     * Sends a message to an <em>existing</em> OpenCode session and returns the text response.
+     * Does not create or delete the session — the caller manages the session lifecycle.
+     *
+     * @param openCodeSessionId an active OpenCode session ID obtained via {@link #createSession()}
+     * @param message           the user message text
+     * @return the assistant response text
+     */
+    public String chat(String openCodeSessionId, String message) {
+        if (openCodeSessionId == null || openCodeSessionId.isBlank()) {
+            throw new IllegalArgumentException("openCodeSessionId is required");
+        }
+        if (message == null || message.isBlank()) {
+            throw new IllegalArgumentException("message is required");
+        }
+        log.info("OpenCode stateful chat — sessionId='{}' messageLength={}", openCodeSessionId, message.length());
+        return sendMessage(openCodeSessionId, message);
+    }
+
     // -------------------------------------------------------------------------
     // Session lifecycle
     // -------------------------------------------------------------------------
 
-    private String createSession() {
-        log.info("OpenCode creating new session");
+    public String createSession() {
+        log.info("OpenCode creating new session via POST {}/session", baseUrl);
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(baseUrl + "/session"))
                 .header("Content-Type", "application/json")
@@ -92,6 +118,7 @@ public class OpenCodeChatModel implements ChatModel {
                 .build();
 
         HttpResponse<String> response = execute(request);
+        log.debug("OpenCode POST /session → HTTP {}", response.statusCode());
 
         if (response.statusCode() < 200 || response.statusCode() >= 300) {
             throw new RuntimeException(
@@ -114,7 +141,8 @@ public class OpenCodeChatModel implements ChatModel {
         }
     }
 
-    private void deleteSession(String sessionId) {
+    public void deleteSession(String sessionId) {
+        log.info("OpenCode deleting session sessionId='{}'", sessionId);
         try {
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(baseUrl + "/session/" + sessionId))
@@ -122,13 +150,13 @@ public class OpenCodeChatModel implements ChatModel {
                     .build();
             HttpResponse<String> response = execute(request);
             if (response.statusCode() < 200 || response.statusCode() >= 300) {
-                log.warn("OpenCode session delete returned HTTP {} for sessionId='{}'",
-                        response.statusCode(), sessionId);
+                log.warn("OpenCode DELETE /session/{} → HTTP {} (unexpected)",
+                        sessionId, response.statusCode());
             } else {
-                log.info("OpenCode session deleted sessionId='{}'", sessionId);
+                log.info("OpenCode session deleted sessionId='{}' HTTP {}", sessionId, response.statusCode());
             }
         } catch (Exception e) {
-            log.warn("OpenCode session delete failed for sessionId='{}': {}", sessionId, e.getMessage());
+            log.warn("OpenCode session delete failed sessionId='{}': {}", sessionId, e.getMessage());
         }
     }
 
@@ -145,7 +173,7 @@ public class OpenCodeChatModel implements ChatModel {
                 .timeout(java.time.Duration.ofSeconds(timeoutSeconds))
                 .build();
 
-        log.info("OpenCode sending message sessionId='{}', payloadLength={}", sessionId, body.length());
+        log.info("OpenCode POST /session/{}/message payloadLength={}", sessionId, body.length());
 
         HttpResponse<java.io.InputStream> response;
         try {
@@ -156,6 +184,8 @@ public class OpenCodeChatModel implements ChatModel {
                     "Failed to connect to OpenCode gateway at " + baseUrl + ": " + e.getMessage(), e);
         }
 
+        log.debug("OpenCode POST /session/{}/message → HTTP {}", sessionId, response.statusCode());
+
         if (response.statusCode() < 200 || response.statusCode() >= 300) {
             throw new RuntimeException(
                     "OpenCode message returned HTTP " + response.statusCode() +
@@ -163,7 +193,7 @@ public class OpenCodeChatModel implements ChatModel {
         }
 
         String text = readTextPartsFromStream(response.body(), sessionId);
-        log.info("OpenCode task completed sessionId='{}', responseLength={}", sessionId, text.length());
+        log.info("OpenCode stream complete sessionId='{}' responseLength={}", sessionId, text.length());
         return text;
     }
 
@@ -176,37 +206,59 @@ public class OpenCodeChatModel implements ChatModel {
      */
     private String readTextPartsFromStream(java.io.InputStream body, String sessionId) {
         StringBuilder text = new StringBuilder();
+        int linesRead = 0;
+        int textPartsAccumulated = 0;
+        int linesSkipped = 0;
+
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(body))) {
             String line;
             while ((line = reader.readLine()) != null) {
+                linesRead++;
                 line = line.trim();
                 if (line.isEmpty()) continue;
                 try {
                     JsonNode node = objectMapper.readTree(line);
                     JsonNode parts = node.get("parts");
-                    if (parts == null || !parts.isArray()) continue;
+                    if (parts == null || !parts.isArray()) {
+                        linesSkipped++;
+                        continue;
+                    }
                     for (JsonNode part : parts) {
                         String partType = textOf(part, "type");
                         if ("text".equals(partType)) {
                             String partText = textOf(part, "text");
-                            if (partText != null) text.append(partText);
+                            if (partText != null) {
+                                text.append(partText);
+                                textPartsAccumulated++;
+                            }
                         } else if ("step-finish".equals(partType)) {
-                            log.debug("OpenCode step-finish received for session='{}'", sessionId);
-                            return text.isEmpty()
-                                ? "I was unable to complete this task. Please try breaking it into smaller steps or provide more details."
-                                : text.toString();
+                            log.debug("OpenCode step-finish received sessionId='{}' linesRead={} textParts={} accumulatedLength={}",
+                                    sessionId, linesRead, textPartsAccumulated, text.length());
+                            if (text.isEmpty()) {
+                                log.warn("OpenCode step-finish with empty text sessionId='{}' — returning fallback message", sessionId);
+                                return "I was unable to complete this task. Please try breaking it into smaller steps or provide more details.";
+                            }
+                            return text.toString();
+                        } else if (partType != null) {
+                            log.debug("OpenCode skipping part type='{}' sessionId='{}'", partType, sessionId);
                         }
                     }
                 } catch (JsonProcessingException e) {
-                    log.trace("OpenCode skipping unparseable line for session='{}': {}", sessionId, line);
+                    linesSkipped++;
+                    log.trace("OpenCode unparseable NDJSON line sessionId='{}' line={}: {}",
+                            sessionId, linesRead, line);
                 }
             }
         } catch (IOException e) {
             throw new RuntimeException("Error reading OpenCode response stream for session='" + sessionId + "'", e);
         }
 
+        log.debug("OpenCode stream ended sessionId='{}' linesRead={} textParts={} linesSkipped={} accumulatedLength={}",
+                sessionId, linesRead, textPartsAccumulated, linesSkipped, text.length());
+
         if (text.isEmpty()) {
-            log.warn("OpenCode stream ended with no text parts for sessionId='{}'", sessionId);
+            log.warn("OpenCode stream ended with no text parts sessionId='{}' linesRead={} — returning fallback message",
+                    sessionId, linesRead);
             return "I was unable to complete this task. Please try breaking it into smaller steps or provide more details.";
         }
         return text.toString();
